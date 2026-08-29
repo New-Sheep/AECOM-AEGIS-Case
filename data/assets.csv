@@ -1,5 +1,5 @@
 id,name,type,lat,lon,elevation,scada_link_id,replacement_cost
-SUB-001,Fort Myers Beach Tap (Ian conflict demo),Transformer,26.45000,-81.95000,5.0,SCADA-0001,2880000
+SUB-001,Fort Myers Beach,Transformer,26.45000,-81.95000,5.0,SCADA-0001,2880000
 SUB-002,AdventHealth Tampa,Hospital,28.05470,-82.42140,7.1,SCADA-0002,9696000
 SUB-003,Babcock Ranch Solar,Switchgear,26.78000,-81.72000,14.3,SCADA-0003,960000
 SUB-004,Bartow,Transformer,27.86670,-82.66670,4.8,SCADA-0004,1540000

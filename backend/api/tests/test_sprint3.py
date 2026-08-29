@@ -38,10 +38,9 @@ class FakeLlmTests(TestCase):
         }
         md = fake_brief_markdown(facts)
         self.assertIn("SUB-001", md)
-        self.assertIn("0.180", md)
-        self.assertIn("ConflictFlag", md)
+        self.assertIn("WARNING", md)
         self.assertIn("Trade-off", md)
-        self.assertIn("oil_temp", md)
+        self.assertIn("Oil temperature", md)
 
     def test_structured_fake_passes_grounding(self):
         os.environ["FAKE_LLM"] = "1"
@@ -113,7 +112,7 @@ class FakeLlmTests(TestCase):
         md, provider = generate_action_brief(facts)
         self.assertEqual(provider, "fake")
         self.assertIn("SUB-007", md)
-        self.assertIn("0.420", md)
+        self.assertIn("Watch", md)
 
     def test_suggest_deenergize_on_conflict(self):
         self.assertEqual(
@@ -167,7 +166,7 @@ class ControlApiTests(TestCase):
         body = resp.json()
         self.assertEqual(body["asset_id"], "SUB-001")
         self.assertEqual(body["provider"], "fake")
-        self.assertIn("ConflictFlag", body["markdown"])
+        self.assertIn("WARNING", body["markdown"])
         self.assertTrue(body["facts"]["conflict_flag"])
 
     def test_header_endpoint(self):
@@ -190,6 +189,52 @@ class ControlApiTests(TestCase):
             format="json",
         )
         self.assertEqual(resp.status_code, 400)
+
+    def test_l1_simulates_load_cut(self):
+        before = Telemetry.objects.filter(asset=self.asset).latest("timestamp").load
+        self.asset.conflict_flag = True
+        self.asset.save(update_fields=["conflict_flag"])
+        resp = self.client.post(
+            "/api/v1/control/shutdown/",
+            {
+                "asset_id": "SUB-001",
+                "action_level": "load_shed",
+                "authorization_token": "AEGIS-OPS",
+                "reason_text": "Demo load shed",
+                "user_id": "demo-ic",
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 201)
+        body = resp.json()
+        self.assertTrue(body["ok"])
+        self.assertIn("human_summary", body)
+        self.assertTrue(body.get("conflict_cleared"))
+        self.assertAlmostEqual(float(body["load_before"]), float(before), places=3)
+        self.assertAlmostEqual(
+            float(body["load_after"]), max(0.05, float(before) * 0.8), places=3
+        )
+        after = Telemetry.objects.filter(asset=self.asset).latest("timestamp").load
+        self.assertAlmostEqual(float(after), float(body["load_after"]), places=3)
+        self.asset.refresh_from_db()
+        self.assertFalse(self.asset.conflict_flag)
+
+    def test_assistant_explains_surge(self):
+        resp = self.client.post(
+            "/api/v1/assistant/chat/",
+            {
+                "asset_id": "SUB-001",
+                "message": "Why is surge a problem vs elevation?",
+                "mode": "fake",
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertIn("reply", body)
+        self.assertTrue(
+            "flood" in body["reply"].lower() or "surge" in body["reply"].lower()
+        )
 
     def test_l4_requires_exec_token(self):
         resp = self.client.post(
@@ -226,6 +271,10 @@ class ControlApiTests(TestCase):
         self.assertEqual(audit.action, "deenergize")
         self.assertEqual(audit.authorization_level, "L4")
         self.assertIn("hospital", audit.reason_text.lower())
+        self.asset.refresh_from_db()
+        self.assertFalse(self.asset.conflict_flag)
+        tel = Telemetry.objects.filter(asset=self.asset).latest("timestamp")
+        self.assertEqual(float(tel.load), 0.0)
 
     def test_forecast_series(self):
         resp = self.client.get("/api/v1/assets/SUB-001/forecast/")

@@ -4,6 +4,7 @@ from api.views import (
     ActionBriefView,
     AgentResumeView,
     AgentRunView,
+    AssistantChatView,
     BriefView,
     ControlShutdownView,
     DashboardHeaderView,
@@ -29,6 +30,7 @@ urlpatterns = [
     ),
     path("dashboard/header/", DashboardHeaderView.as_view(), name="dashboard_header"),
     path("control/shutdown/", ControlShutdownView.as_view(), name="control_shutdown"),
+    path("assistant/chat/", AssistantChatView.as_view(), name="assistant_chat"),
     # Nervous system (whiteboard)
     path("predict/", PredictView.as_view(), name="predict"),
     path("impact/<str:node_id>/", ImpactView.as_view(), name="impact"),

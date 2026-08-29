@@ -78,7 +78,7 @@ class Command(BaseCommand):
                 timestamp=now,
                 wind_speed=float(row["wind_speed"]),
                 flood_surge_level=float(row["surge_level"]),
-                storm_category="Sprint2-Demo",
+                storm_category="Hurricane Ian",
             )
 
         # Guarantee physics-critical demo asset SUB-001 for ConflictFlag after heartbeat clamp
@@ -98,7 +98,7 @@ class Command(BaseCommand):
                 asset=demo,
                 wind_speed=115.0,
                 flood_surge_level=12.0,
-                storm_category="ConflictDemo",
+                storm_category="Hurricane Ian",
             )
             # elevation on SUB-001 from CSV may be 8; ensure surge > elev
             if demo.elevation >= 12.0:

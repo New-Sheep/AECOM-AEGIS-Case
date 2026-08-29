@@ -127,15 +127,20 @@ def _nvidia_action_brief(facts: dict[str, Any]) -> ActionBrief:
 
 def generate_action_brief_structured(
     facts: dict[str, Any],
+    *,
+    mode: str | None = None,
 ) -> tuple[ActionBrief, str, list[str]]:
     """
     Return (brief, provider, grounding_issues).
 
-    On schema/NIM failure or grounding failure, falls back to FAKE ActionBrief.
-    Grounding issues from a successful NIM parse are returned even when we keep
-    the brief if issues empty; if issues non-empty we replace with FAKE.
+    mode: "fake" | "live" | None
+      - fake: always FAKE structured brief (fast; UI default)
+      - live: call NVIDIA (falls back to FAKE on failure)
+      - None: follow FAKE_LLM / env (use_fake_llm)
     """
-    if use_fake_llm():
+    force_fake = (mode or "").strip().lower() == "fake"
+    force_live = (mode or "").strip().lower() == "live"
+    if force_fake or (not force_live and use_fake_llm()):
         brief = fake_action_brief(facts)
         issues = deterministic_validate(brief, facts)
         return brief, "fake", issues
@@ -155,15 +160,17 @@ def generate_action_brief_structured(
         return fallback, "fake", [f"nvidia_or_parse_failed: {exc}"]
 
 
-def generate_action_brief(facts: dict[str, Any]) -> tuple[str, str]:
+def generate_action_brief(
+    facts: dict[str, Any],
+    *,
+    mode: str | None = None,
+) -> tuple[str, str]:
     """Return (markdown, provider). Public API unchanged for views/agent."""
-    brief, provider, issues = generate_action_brief_structured(facts)
+    brief, provider, issues = generate_action_brief_structured(facts, mode=mode)
     md = render_brief_markdown(brief, provider=provider)
-    if issues and provider == "fake":
-        md += (
-            "\n\n_Note: structured brief validation/NIM issue "
-            f"(`{'; '.join(issues[:3])}`); served FAKE brief._\n"
-        )
+    # Keep markdown clean for operators; UI shows a calm live-fail note separately.
+    if issues and provider == "fake" and mode == "live":
+        md += "\n\n_Using the standard site summary._\n"
     return md, provider
 
 
@@ -181,8 +188,8 @@ def judge_brief(facts: dict[str, Any], brief: ActionBrief | str) -> JudgeVerdict
             issues = deterministic_validate(structured, facts)
             if str(facts.get("asset_id", "")) not in brief:
                 issues.append("markdown missing asset_id")
-            if bool(facts.get("conflict_flag")) and "ConflictFlag" not in brief and "WARNING" not in brief:
-                issues.append("markdown missing ConflictFlag language")
+            if bool(facts.get("conflict_flag")) and "WARNING" not in brief and "caution" not in brief.lower() and "conflict" not in brief.lower() and "flood" not in brief.lower():
+                issues.append("markdown missing conflict/caution language")
             faithful = len(issues) == 0
             return JudgeVerdict(
                 faithful=faithful,

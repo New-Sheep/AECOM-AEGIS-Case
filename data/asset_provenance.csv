@@ -1,5 +1,5 @@
 id,name,type,source,elevation_method,weather
-SUB-001,Fort Myers Beach Tap (Ian conflict demo),Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-001,Fort Myers Beach,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
 SUB-002,AdventHealth Tampa,Hospital,HIFLD-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
 SUB-003,Babcock Ranch Solar,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
 SUB-004,Bartow,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak

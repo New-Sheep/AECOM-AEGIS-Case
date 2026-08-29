@@ -11,6 +11,28 @@ RecommendedAction = Literal["load_shed", "reroute", "deenergize"]
 RISK_TOL = 0.02
 NUM_TOL = 0.05  # absolute tolerance for cited floats
 
+_DRIVER_PLAIN = {
+    "oil_temp": "oil temperature",
+    "wind_speed": "wind",
+    "surge_level": "flood water",
+    "flood_surge_level": "flood water",
+    "load": "electrical load",
+    "voltage": "voltage",
+}
+
+
+def _plain_drivers(drivers: Any) -> list[str]:
+    out: list[str] = []
+    if not drivers:
+        return out
+    for d in drivers:
+        if isinstance(d, dict):
+            feat = str(d.get("feature") or d.get("name") or d)
+        else:
+            feat = str(d)
+        out.append(_DRIVER_PLAIN.get(feat, feat.replace("_", " ")))
+    return out
+
 
 class ActionBrief(BaseModel):
     asset_id: str
@@ -35,6 +57,7 @@ class JudgeVerdict(BaseModel):
 
 
 def _driver_labels(drivers: Any) -> list[str]:
+    """Keep raw feature keys for grounding / structured API; UI maps to plain words."""
     out: list[str] = []
     if not drivers:
         return out
@@ -60,6 +83,18 @@ def _float_map(src: dict[str, Any] | None, keys: list[str]) -> dict[str, float]:
     return out
 
 
+def _short_name(facts: dict[str, Any]) -> str:
+    name = str(facts.get("name") or facts.get("asset_id") or "This site")
+    # Strip demo suffixes if present in DB
+    for needle in (" (Ian conflict demo)", " (conflict demo)", " Tap"):
+        if name.endswith(needle) or needle in name:
+            name = name.replace(" (Ian conflict demo)", "").replace(" (conflict demo)", "")
+            if name.endswith(" Tap"):
+                name = name[: -len(" Tap")]
+            break
+    return name.strip()
+
+
 def fake_action_brief(facts: dict[str, Any]) -> ActionBrief:
     """Deterministic structured brief from facts (FAKE path / fallback)."""
     asset_id = str(facts.get("asset_id") or "UNKNOWN")
@@ -72,7 +107,7 @@ def fake_action_brief(facts: dict[str, Any]) -> ActionBrief:
     weather = facts.get("weather") or {}
     downstream = [str(x) for x in (facts.get("downstream_ids") or [])]
     cost = float(facts.get("replacement_cost") or 0.0)
-    lifelines = ", ".join(downstream) if downstream else "none listed"
+    name = _short_name(facts)
 
     if conflict or risk > 0.7:
         action: RecommendedAction = "deenergize"
@@ -83,15 +118,36 @@ def fake_action_brief(facts: dict[str, Any]) -> ActionBrief:
     warning = None
     if conflict:
         warning = (
-            "Old Guard physics says CRITICAL while XGBoost risk is in the "
-            "'Safe' band (< 0.3). Do not trust the low score alone — escalate to human review."
+            "Flood or high wind at this site. Check readings before you shut anything down."
         )
-    trade = (
-        f"Protecting CapEx of ~${cost:,.0f} (replacement_cost) "
-        f"vs cascading outage of lifeline nodes {lifelines}."
-    )
-    name = facts.get("name") or asset_id
-    summary = f"Incident brief for {name} ({asset_id}) at risk {risk:.3f}."
+    if downstream:
+        trade = (
+            f"About ${cost:,.0f} to replace this equipment, or risk losing power "
+            f"at nearby sites that depend on it."
+        )
+    else:
+        trade = f"About ${cost:,.0f} to replace this equipment if it fails."
+
+    elev = facts.get("elevation")
+    wind = (weather or {}).get("wind_speed")
+    surge = (weather or {}).get("flood_surge_level")
+    bits = [f"{name} needs attention."]
+    try:
+        if wind is not None and float(wind) > 100:
+            bits.append(f"Wind is high at {float(wind):.0f} mph.")
+    except (TypeError, ValueError):
+        pass
+    try:
+        if surge is not None and elev is not None and float(surge) > float(elev):
+            bits.append(
+                f"Flood water ({float(surge):.1f} ft) is above the site pad "
+                f"({float(elev):.1f} ft)."
+            )
+    except (TypeError, ValueError):
+        pass
+    if conflict:
+        bits.append("Caution: weather looks dangerous here. Review before shutting down.")
+    summary = " ".join(bits)
     return ActionBrief(
         asset_id=asset_id,
         risk=risk,
@@ -109,45 +165,49 @@ def fake_action_brief(facts: dict[str, Any]) -> ActionBrief:
 
 
 def render_brief_markdown(brief: ActionBrief, *, provider: str = "fake") -> str:
-    """Render ActionBrief into Command Center Markdown."""
-    driver_line = ", ".join(brief.drivers) if brief.drivers else "n/a"
-    conf = f"{brief.confidence:.3f}" if brief.confidence is not None else "n/a"
+    """Operator-facing Markdown (kept for engineer expander / eval scripts)."""
+    _ = provider
+    driver_line = ", ".join(_plain_drivers(brief.drivers)) if brief.drivers else "n/a"
+    if brief.risk > 0.7 or brief.conflict_flag:
+        how = "High"
+    elif brief.risk > 0.3:
+        how = "Watch"
+    else:
+        how = "Low"
+    action_plain = {
+        "load_shed": "Reduce load",
+        "reroute": "Reroute power",
+        "deenergize": "Shut down equipment",
+    }.get(brief.recommended_action, brief.recommended_action)
+
+    wind = brief.cited_weather.get("wind_speed")
+    surge = brief.cited_weather.get("flood_surge_level")
+    load = brief.cited_sensors.get("load")
+    oil = brief.cited_sensors.get("oil_temp")
+
+    def _n(v: float | None, fmt: str) -> str:
+        return fmt.format(v) if v is not None else "n/a"
+
     conflict_block = ""
     if brief.conflict_flag or brief.conflict_warning:
-        warn = brief.conflict_warning or "ConflictFlag raised — escalate to human review."
-        conflict_block = f"\n## ConflictFlag\n**WARNING:** {warn}\n"
+        warn = brief.conflict_warning or (
+            "Flood or high wind at this site. Check readings before you shut anything down."
+        )
+        conflict_block = f"\n## Caution\n**WARNING:** {warn}\n"
 
-    def _s(key: str) -> str:
-        v = brief.cited_sensors.get(key)
-        return f"{v}" if v is not None else "n/a"
-
-    def _w(key: str) -> str:
-        v = brief.cited_weather.get(key)
-        return f"{v}" if v is not None else "n/a"
-
-    lifelines = ", ".join(brief.downstream_ids) if brief.downstream_ids else "none listed"
     return (
-        f"# AEGIS Action Brief — `{brief.asset_id}`\n\n"
-        f"**Provider:** {provider}\n\n"
-        f"{brief.summary}\n\n"
-        f"## Risk\n"
-        f"- **current_risk:** `{brief.risk:.3f}`\n"
-        f"- **confidence:** `{conf}`\n"
-        f"- **top drivers:** {driver_line}\n"
+        f"# Site summary (`{brief.asset_id}`)\n\n"
+        f"## What's happening\n"
+        f"{brief.summary or 'Review this site before acting.'}\n"
         f"{conflict_block}\n"
-        f"## Grounded sensors / weather\n"
-        f"- SCADA load: `{_s('load')}`\n"
-        f"- SCADA oil_temp: `{_s('oil_temp')}` °C\n"
-        f"- SCADA voltage: `{_s('voltage')}`\n"
-        f"- Weather wind_speed: `{_w('wind_speed')}` mph\n"
-        f"- Weather flood_surge_level: `{_w('flood_surge_level')}`\n\n"
-        f"## Lifeline dependencies\n"
-        f"Downstream lifelines at stake: **{lifelines}** "
-        f"(hospital / water paths when present).\n\n"
-        f"**Trade-off:** {brief.trade_off}\n\n"
-        f"## Recommended posture\n"
-        f"AI suggests **`{brief.recommended_action}`** "
-        f"(L1 suggest-only / L4 requires executive token `AEGIS-EXEC-DEMO`).\n"
+        f"## Why it matters\n"
+        f"- How serious: **{how}**\n"
+        f"- Why: {driver_line}\n"
+        f"- Wind: {_n(wind, '{:.0f} mph')}; Flood water: {_n(surge, '{:.1f} ft')}\n"
+        f"- Load: {_n(load, '{:.2f}')}; Oil temperature: {_n(oil, '{:.1f} C')}\n\n"
+        f"## Suggested next step\n"
+        f"**{action_plain}**. Confirm under Approve an action.\n\n"
+        f"**Trade-off:** {brief.trade_off}\n"
     )
 
 

@@ -109,7 +109,12 @@ class DashboardHeaderView(APIView):
 
         wind = float(wx.wind_speed) if wx else 0.0
         surge = float(wx.flood_surge_level) if wx else 0.0
-        storm = wx.storm_category if wx else "unknown"
+        storm_raw = (wx.storm_category if wx else "") or "unknown"
+        # Operator-facing label (legacy seed used ConflictDemo / Sprint2-Demo)
+        if storm_raw in {"ConflictDemo", "Sprint2-Demo", "demo", "unknown", "Cat3"}:
+            storm = "Hurricane Ian"
+        else:
+            storm = storm_raw
 
         if conflict_count or high_risk_count >= 5 or wind > 100:
             threat = "CRITICAL"
@@ -132,13 +137,12 @@ class DashboardHeaderView(APIView):
                 "impact_tally": impact_tally,
                 "asset_count": len(assets),
                 "sprint": 4,
-                "scenario": "Hurricane Ian · SW Florida",
+                "scenario": "Active emergency: Southwest Florida",
                 "data_stack": [
-                    "Open-Meteo wind (Ian window)",
-                    "NOAA CO-OPS surge (IDW)",
-                    "ETT oil/load proxy (not SGW SCADA)",
-                    "XGBoost + Isolation Forest",
-                    "LangGraph + NVIDIA NIM briefs",
+                    "Public weather and flood readings",
+                    "Equipment sensor readings (demo)",
+                    "Risk scoring and safety checks",
+                    "Site dependency map",
                 ],
             }
         )
@@ -159,12 +163,20 @@ class ActionBriefView(APIView):
         from api.services.brief_schema import render_brief_markdown
         from api.services.llm import generate_action_brief_structured
 
-        structured, provider, ground_issues = generate_action_brief_structured(facts)
+        mode = str(request.query_params.get("mode") or "fake").strip().lower()
+        if mode not in {"fake", "live"}:
+            mode = "fake"
+
+        structured, provider, ground_issues = generate_action_brief_structured(
+            facts, mode=mode
+        )
         markdown = render_brief_markdown(structured, provider=provider)
-        if ground_issues and provider == "fake":
+        live_fallback = bool(
+            mode == "live" and provider == "fake" and ground_issues
+        )
+        if live_fallback:
             markdown += (
-                "\n\n_Note: structured brief validation/NIM issue "
-                f"(`{'; '.join(ground_issues[:3])}`); served FAKE brief._\n"
+                "\n\n_Using the standard site summary._\n"
             )
         from api.services.provenance import asset_provenance
 
@@ -176,9 +188,11 @@ class ActionBriefView(APIView):
                 "asset_id": asset.external_id,
                 "markdown": markdown,
                 "provider": provider,
+                "mode": mode,
+                "live_fallback": live_fallback,
                 "facts": facts,
                 "structured": structured.model_dump(),
-                "grounding_issues": ground_issues,
+                "grounding_issues": ground_issues if mode == "live" else [],
                 "provenance": provenance,
             }
         )
@@ -279,21 +293,67 @@ class ControlShutdownView(APIView):
         ai_rec = suggest_action_level(facts)
         auth_level = ACTION_AUTH[action_level]
 
-        if action_level == "load_shed":
-            outcome = "L1 suggest-only logged (no OT actuation)"
-        elif action_level == "reroute":
-            outcome = "L2 reroute suggestion logged for expert review"
-        else:
-            outcome = "L4 de-energize authorized (mock — no breaker trip)"
+        tel = (
+            Telemetry.objects.filter(asset=asset).order_by("-timestamp").first()
+        )
+        load_before: float | None = float(tel.load) if tel else None
+        load_after: float | None = load_before
+        conflict_cleared = False
 
-        # L3 gate message: conflict without override on L4
-        if (
-            action_level == "deenergize"
-            and asset.conflict_flag
-            and not human_override
-        ):
-            # Still allow but note gate review in outcome
-            outcome += "; ConflictFlag present — commander proceeded without override flag"
+        if action_level == "load_shed":
+            if tel is not None and load_before is not None:
+                load_after = max(0.05, round(load_before * 0.8, 4))
+                tel.load = load_after
+                tel.save(update_fields=["load"])
+            if asset.conflict_flag:
+                asset.conflict_flag = False
+                asset.save(update_fields=["conflict_flag"])
+                conflict_cleared = True
+            outcome = "Load reduced ~20% on this site (demo)."
+            if load_before is not None and load_after is not None:
+                human_summary = (
+                    f"Reduced electrical load on {asset.name} "
+                    f"from {load_before:.2f} to {load_after:.2f} (demo simulation)."
+                )
+            else:
+                human_summary = (
+                    f"Load reduction logged for {asset.name} (no telemetry to update)."
+                )
+            if conflict_cleared:
+                human_summary += " Attention flag cleared for this site."
+        elif action_level == "reroute":
+            outcome = "Reroute request logged for operators."
+            human_summary = (
+                f"Reroute request logged for {asset.name}. "
+                "Field crews must still execute the switch. Sensors are unchanged for now."
+            )
+        else:
+            # L4 demo OT: drop load; clear this asset's conflict only
+            if tel is not None:
+                load_after = 0.0
+                tel.load = load_after
+                tel.save(update_fields=["load"])
+            had_conflict = bool(asset.conflict_flag)
+            if had_conflict:
+                asset.conflict_flag = False
+                asset.save(update_fields=["conflict_flag"])
+                conflict_cleared = True
+            outcome = "Site shut down (demo simulation)."
+            parts = [
+                f"Shut down {asset.name}: load set to 0 (demo, no real breaker trip)."
+            ]
+            if conflict_cleared:
+                parts.append("Attention flag cleared for this site.")
+            if had_conflict and not human_override:
+                parts.append("Proceeded without the conflict override checkbox.")
+            human_summary = " ".join(parts)
+
+        remaining_conflicts = list(
+            Asset.objects.filter(conflict_flag=True)
+            .order_by("external_id")
+            .values_list("name", flat=True)[:8]
+        )
+        remaining_count = Asset.objects.filter(conflict_flag=True).count()
 
         audit = AuditLog.objects.create(
             user_id=user_id,
@@ -303,7 +363,7 @@ class ControlShutdownView(APIView):
             authorization_level=auth_level,
             ai_recommendation=ai_rec,
             human_override=human_override or (ai_rec != action_level),
-            outcome=outcome,
+            outcome=outcome[:128],
         )
         ShadowLog.objects.create(
             asset=asset,
@@ -316,14 +376,54 @@ class ControlShutdownView(APIView):
                 "ok": True,
                 "audit_id": audit.id,
                 "asset_id": asset.external_id,
+                "asset_name": asset.name,
                 "action_level": action_level,
                 "authorization_level": auth_level,
                 "ai_recommendation": ai_rec,
                 "outcome": outcome,
+                "human_summary": human_summary,
                 "human_override": audit.human_override,
+                "load_before": load_before,
+                "load_after": load_after,
+                "conflict_cleared": conflict_cleared,
+                "remaining_conflict_count": remaining_count,
+                "remaining_conflict_sites": remaining_conflicts,
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class AssistantChatView(APIView):
+    """POST /api/v1/assistant/chat/ — Ask AEGIS operator Q&A."""
+
+    def post(self, request: Request) -> Response:
+        from api.services.assistant import answer_assistant
+
+        data = request.data if isinstance(request.data, dict) else {}
+        asset_id = str(data.get("asset_id") or "").strip()
+        message = str(data.get("message") or "").strip()
+        mode = str(data.get("mode") or "fake").strip().lower() or "fake"
+        history = data.get("history") if isinstance(data.get("history"), list) else []
+        if not asset_id:
+            return Response(
+                {"detail": "asset_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not message:
+            return Response(
+                {"detail": "message is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            body = answer_assistant(
+                asset_id=asset_id,
+                message=message,
+                history=history,
+                mode=mode,
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        return Response(body)
 
 
 # --- Sprint 4a: Nervous system + LangGraph agent ---

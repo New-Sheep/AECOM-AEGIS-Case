@@ -281,7 +281,7 @@ def build(refresh: bool = False) -> None:
         if ext == "SUB-001":
             elev = 5.0
             c["lat"], c["lon"] = 26.4500, -81.9500  # Fort Myers Beach Tap corridor
-            c["name"] = "Fort Myers Beach Tap (Ian conflict demo)"
+            c["name"] = "Fort Myers Beach"
             c["type"] = "Transformer"
 
         wind, surge = storm_fields(c["lat"], c["lon"], elev, track, fm_peak, rng)

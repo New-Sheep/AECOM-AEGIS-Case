@@ -1,4 +1,4 @@
-"""Manual Audit / Anomaly Shield banner."""
+"""Manual approval banner when a status check pauses for unusual readings."""
 
 from __future__ import annotations
 
@@ -11,20 +11,19 @@ def render_agent_banner(agent: dict | None) -> None:
     if not agent or agent.get("status") != "interrupted":
         return
     st.error(
-        "**Anomaly Shield — Manual Audit required** before the AI pipeline continues.  \n"
-        f"thread=`{agent.get('thread_id')}` · anomaly_score=`{agent.get('anomaly_score')}`"
+        "**Unusual sensor readings. Your approval is required** before the check continues."
     )
-    audit_reason = st.text_input("Manual audit reason", key="agent_audit_reason")
+    audit_reason = st.text_input("Your note (optional)", key="agent_audit_reason")
     c_a, c_r = st.columns(2)
     with c_a:
-        if st.button("Approve — continue pipeline", type="primary"):
+        if st.button("Approve and continue", type="primary"):
             ok, body, _ = post_json(
                 "/api/v1/agent/resume/",
                 {
                     "thread_id": agent["thread_id"],
                     "decision": "approved",
                     "reason_text": audit_reason
-                    or "Operator approved anomaly continue",
+                    or "Operator approved continue after unusual readings",
                 },
             )
             if ok:
@@ -34,13 +33,13 @@ def render_agent_banner(agent: dict | None) -> None:
             else:
                 st.error(body.get("detail") or body)
     with c_r:
-        if st.button("Reject — halt AI pipeline"):
+        if st.button("Reject and hold"):
             ok, body, _ = post_json(
                 "/api/v1/agent/resume/",
                 {
                     "thread_id": agent["thread_id"],
                     "decision": "rejected",
-                    "reason_text": audit_reason or "Operator rejected — hold",
+                    "reason_text": audit_reason or "Operator held: do not continue",
                 },
             )
             if ok:

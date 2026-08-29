@@ -2,7 +2,7 @@
 
 **AEGIS** (AI-Enabled Grid & Infrastructure Shield) for fictional client **Southeastern Grid & Water (SGW)**.
 
-**UI:** Redesigned Streamlit Command Center (SOC theme) — scenario strip, structured brief chips (recommendation / provider / grounding), sensor provenance (Open-Meteo · CO-OPS · ETT), LangGraph Manual Audit, L1–L4 HITL.
+**UI:** Streamlit Command Center for executives and operators. Plain English only on the main screen. Fast standard summaries by default; **Advanced** for live AI. Click map dots to select a site; **Reduce load** / **Shut down** under the map. Ask AEGIS answers newest-first.
 
 **Demo data:** Hybrid **Hurricane Ian + SW Florida** GIS + **Open-Meteo** wind + **NOAA CO-OPS** surge + **ETT ETTh1** oil_temp/load proxy (not SGW SCADA). See [`docs/15-DATA-PROVENANCE.md`](docs/15-DATA-PROVENANCE.md).
 
@@ -63,22 +63,28 @@ $env:AEGIS_API_BASE="http://127.0.0.1:8000"
 .\.venv\Scripts\streamlit.exe run frontend\dashboard.py
 ```
 
-The Command Center surfaces Ian scenario provenance, Pydantic brief grounding status, and LangGraph agent state (not just raw Markdown).
+The Command Center is written for first-time operators: short site names, no engineer jargon on the main screen, **Ask AEGIS**, map click + quick actions, and human approval records. Stack details stay under **Advanced** / docs.
+
+**Operator notes**
+
+- **Reduce load** cuts that site's load ~20% and clears that site's attention flag so the top banner count drops (demo simulation).
+- **Shut down** sets load to 0 and clears that site's attention flag.
+- Banner goes **2 → 1 → 0** as you handle each flagged site (acting on one site does not clear others).
+- Re-run `seed_aegis --flush` + `run_heartbeat` after pulling so site names (e.g. **Fort Myers Beach**) and storm label refresh.
 
 ### Demo paths
 
-**A — ConflictFlag → L4 (Ian / Fort Myers Beach)**
+**A — Attention warning → action (Fort Myers Beach)**
 
-1. Select **SUB-001** (*Fort Myers Beach Tap*).
-2. Read brief + raw sensors (surge vs elevation ConflictFlag).
-3. L4 De-energize, token `AEGIS-EXEC-DEMO`, reason, confirm → AuditLog.
+1. Select **Fort Myers Beach** (or click its red map dot).
+2. Read **Summary** + **Readings**. Optional: **Ask AEGIS** → "Explain this warning".
+3. Use **Site actions** under the map, or Approve **Shut down** with token `AEGIS-EXEC-DEMO` → load drops; attention flag clears; banner count drops.
 
-**B — LangGraph Anomaly Shield**
+**B — Unusual sensors check**
 
-1. Sidebar: enable **Force Anomaly Shield**.
-2. Click **Refresh agent (weather update)**.
-3. Banner: Manual Audit → Approve (continues predict→impact→brief) or Reject (halt).
-4. Intelligence panel shows LangGraph `action_plan` + trail.
+1. Sidebar **Advanced**: enable **Demo: fake unusual sensors**.
+2. Click **Refresh this site's analysis**.
+3. Banner: Approve / Reject, then open **Status**.
 
 ### API checks
 
@@ -87,6 +93,7 @@ The Command Center surfaces Ian scenario provenance, Pydantic brief grounding st
 - `POST /api/v1/predict/` `{ "asset_id": "SUB-001" }`
 - `GET /api/v1/impact/SUB-001/`
 - `POST /api/v1/brief/` `{ "asset_id": "SUB-001" }`
+- `POST /api/v1/assistant/chat/` `{ "asset_id": "SUB-001", "message": "What should I do?", "mode": "fake" }`
 - `POST /api/v1/agent/run/` `{ "asset_id": "SUB-001", "force_anomaly": true }`
 - `POST /api/v1/agent/resume/` `{ "thread_id": "...", "decision": "approved", "reason_text": "..." }`
 
@@ -106,7 +113,7 @@ data/           assets/telemetry/deps + raw/ (Ian GIS, open_meteo_ian, ett)
 artifacts/      xgb_risk.joblib, isolation_forest.joblib
 scripts/        build_realistic_demo_data, refresh_telemetry_realistic, train_xgb, backtest_storm
 backend/api/agent/   LangGraph state machine
-frontend/       Streamlit Command Center (theme, map, intel, HITL panels)
+frontend/       Streamlit Command Center (theme, map, intel, Ask AEGIS, HITL)
 docs/           research + sprint plans + DATA-PROVENANCE
 ```
 
