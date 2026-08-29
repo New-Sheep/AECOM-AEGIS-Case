@@ -1,0 +1,28 @@
+{
+  "storm": "Hurricane Ian (AL092022)",
+  "peak_window": "2022-09-28/29 UTC",
+  "stations": {
+    "8725520": {
+      "name": "Fort Myers",
+      "lat": 26.6478,
+      "lon": -81.8711,
+      "peak_ft_msl": 7.94,
+      "source": "NOAA CO-OPS water_level MSL"
+    },
+    "8726724": {
+      "name": "Clearwater Beach",
+      "lat": 27.9783,
+      "lon": -82.8317,
+      "peak_ft_msl": 1.45,
+      "source": "NOAA CO-OPS water_level MSL"
+    },
+    "8726674": {
+      "name": "St Petersburg",
+      "lat": 27.7606,
+      "lon": -82.6269,
+      "peak_ft_msl": 0.32,
+      "source": "NOAA CO-OPS water_level MSL"
+    }
+  },
+  "retrieved_note": "Peaks from NOAA CO-OPS API for Ian landfall window; Fort Myers is primary SW FL surge anchor."
+}

@@ -1,0 +1,9 @@
+name,lat,lon,city,beds,source
+Lee Memorial Hospital,26.6285,-81.8720,Fort Myers,367,HIFLD-style public listing
+Gulf Coast Medical Center,26.5432,-81.8664,Fort Myers,349,HIFLD-style public listing
+Cape Coral Hospital,26.6400,-81.9800,Cape Coral,291,HIFLD-style public listing
+NCH Baker Hospital Downtown,26.1667,-81.7967,Naples,391,HIFLD-style public listing
+Sarasota Memorial Hospital,27.2981,-82.5300,Sarasota,839,HIFLD-style public listing
+Tampa General Hospital,27.9430,-82.4589,Tampa,1011,HIFLD-style public listing
+Bayfront Health Punta Gorda,26.9297,-82.0454,Punta Gorda,208,HIFLD-style public listing
+AdventHealth Tampa,28.0547,-82.4214,Tampa,626,HIFLD-style public listing

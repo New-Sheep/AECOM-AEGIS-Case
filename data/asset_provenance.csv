@@ -1,0 +1,51 @@
+id,name,type,source,elevation_method,weather
+SUB-001,Fort Myers Beach Tap (Ian conflict demo),Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-002,AdventHealth Tampa,Hospital,HIFLD-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-003,Babcock Ranch Solar,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-004,Bartow,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-005,Bayfront Health Punta Gorda,Hospital,HIFLD-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-006,Big Bend,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-007,Blue Heron Solar,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-008,Bradenton Switching Yard,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-009,C.D. McIntosh Jr,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-010,Cape Coral Feeder Station,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-011,Cape Coral Hospital,Hospital,HIFLD-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-012,Cape Coral Wastewater Plant,WaterPlant,EPA FRS-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-013,Charlotte County East Port WWTP,WaterPlant,EPA FRS-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-014,Charlotte Substation East,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-015,City of Sarasota WWTP,WaterPlant,EPA FRS-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-016,Collier County South County WWTP,WaterPlant,EPA FRS-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-017,Collier Transmission Hub,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-018,Estero Transmission Node,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-019,FPL Battery Big Bend,Battery,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-020,FPL Battery Fort Myers,Battery,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-021,FPL Battery Manatee,Battery,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-022,Fort Myers Beach Tap,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-023,Fort Myers Central WWTP,WaterPlant,EPA FRS-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-024,Fort Myers Solar,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-025,Gulf Coast Medical Center,Hospital,HIFLD-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-026,Hillsborough County South County WWTP,WaterPlant,EPA FRS-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-027,Hillsborough Tie,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-028,Hines Energy Complex,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-029,Intercession City,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-030,Lake Placid Solar,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-031,Lakeland Intertie,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-032,Lee County Battery Pilot,Battery,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-033,Lee County Switching Station,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-034,Lee County Three Oaks Pump Station,Pump,EPA FRS-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-035,Lee Memorial Hospital,Hospital,HIFLD-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-036,Manatee,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-037,Manatee Solar Energy Center,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-038,NCH Baker Hospital Downtown,Hospital,HIFLD-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-039,North Port Substation,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-040,Osceola Generating Station,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-041,Osprey Energy Center,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-042,Polk Power Station,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-043,Punta Gorda Solar,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-044,Riverview Energy Center,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-045,Sarasota Memorial Hospital,Hospital,HIFLD-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-046,Sarasota Ring Bus,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-047,Tampa Electric Big Bend Storage,Battery,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-048,Tampa General Hospital,Hospital,HIFLD-style public listing,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-049,Tiger Bay,Transformer,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak
+SUB-050,Venice Distribution Hub,Switchgear,EIA-style plant/substation cache,coastal_heuristic,Ian track + CO-OPS Fort Myers peak

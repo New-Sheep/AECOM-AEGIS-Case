@@ -1,0 +1,46 @@
+plant_id,name,lat,lon,nameplate_mw,fuel,tech
+612,Fort Myers,26.6469,-81.8753,2200,Natural Gas,Combined Cycle
+645,Manatee,27.6400,-82.3517,1600,Natural Gas,Combined Cycle
+646,Big Bend,27.7944,-82.4036,1700,Natural Gas,Combined Cycle
+676,Hines Energy Complex,27.7886,-81.8731,1900,Natural Gas,Combined Cycle
+703,Polk Power Station,27.7286,-81.9894,1400,Natural Gas,Combined Cycle
+732,Intercession City,28.2625,-81.5694,1100,Natural Gas,Combustion Turbine
+804,C.D. McIntosh Jr,28.0803,-81.9228,900,Coal,Steam Turbine
+821,Arvah B Hopkins,30.3856,-84.3981,500,Natural Gas,Combined Cycle
+1001,Bartow,27.8667,-82.6667,450,Natural Gas,Combustion Turbine
+1048,Debary,28.8847,-81.3211,600,Natural Gas,Combustion Turbine
+55225,Bayside Power Station,27.9111,-82.4083,1800,Natural Gas,Combined Cycle
+55306,Osprey Energy Center,28.0539,-81.7489,700,Natural Gas,Combined Cycle
+55409,Treasure Coast Energy Center,27.3667,-80.3333,400,Natural Gas,Combined Cycle
+55701,Citrus Combined Cycle,28.9633,-82.5714,1600,Natural Gas,Combined Cycle
+55936,Port Everglades,26.0856,-80.1250,1200,Natural Gas,Combined Cycle
+56163,Cape Canaveral,28.4681,-80.5289,1200,Natural Gas,Combined Cycle
+56500,Riverview Energy Center,27.8664,-82.3267,350,Natural Gas,Combined Cycle
+57000,Tiger Bay,27.7500,-81.8000,280,Natural Gas,Combined Cycle
+57210,Osceola Generating Station,28.2800,-81.3500,500,Natural Gas,Combustion Turbine
+57550,Lee County Solid Waste,26.6200,-81.7800,60,Waste,Steam Turbine
+58001,Punta Gorda Solar,26.9200,-82.0500,75,Solar,Photovoltaic
+58012,Fort Myers Solar,26.5800,-81.7000,74,Solar,Photovoltaic
+58100,Babcock Ranch Solar,26.7800,-81.7200,150,Solar,Photovoltaic
+58220,Manatee Solar Energy Center,27.5500,-82.2500,75,Solar,Photovoltaic
+58300,Lake Placid Solar,27.2800,-81.3700,50,Solar,Photovoltaic
+58410,Harmony Solar,28.1200,-81.1500,75,Solar,Photovoltaic
+58500,Blue Heron Solar,27.0500,-81.9500,62,Solar,Photovoltaic
+58620,Pioneer Trail Solar,29.0500,-81.3000,74,Solar,Photovoltaic
+59001,FPL Battery Fort Myers,26.6400,-81.8600,40,Battery,Batteries
+59012,FPL Battery Manatee,27.6300,-82.3400,409,Battery,Batteries
+59025,FPL Battery Big Bend,27.7900,-82.3900,30,Battery,Batteries
+59100,Tampa Electric Big Bend Storage,27.8000,-82.4100,46,Battery,Batteries
+59200,Lee County Battery Pilot,26.6000,-81.8200,20,Battery,Batteries
+60001,Charlotte Substation East,26.9800,-81.9800,0,Electric,Substation
+60012,Lee County Switching Station,26.6100,-81.9000,0,Electric,Substation
+60023,Sarasota Ring Bus,27.3200,-82.4800,0,Electric,Substation
+60034,Hillsborough Tie,27.9500,-82.3500,0,Electric,Substation
+60045,Collier Transmission Hub,26.2000,-81.7000,0,Electric,Substation
+60056,Cape Coral Feeder Station,26.5600,-81.9500,0,Electric,Substation
+60067,Venice Distribution Hub,27.1000,-82.4400,0,Electric,Substation
+60078,Lakeland Intertie,28.0400,-81.9500,0,Electric,Substation
+60089,Bradenton Switching Yard,27.4800,-82.5600,0,Electric,Substation
+60100,Fort Myers Beach Tap,26.4500,-81.9500,0,Electric,Substation
+60111,Estero Transmission Node,26.4300,-81.8100,0,Electric,Substation
+60122,North Port Substation,27.0500,-82.2000,0,Electric,Substation

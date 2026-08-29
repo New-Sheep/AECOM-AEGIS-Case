@@ -1,0 +1,8 @@
+name,lat,lon,city,facility_type,source
+Fort Myers Central WWTP,26.6200,-81.8600,Fort Myers,WaterPlant,EPA FRS-style public listing
+Cape Coral Wastewater Plant,26.5800,-82.0200,Cape Coral,WaterPlant,EPA FRS-style public listing
+Collier County South County WWTP,26.1400,-81.7200,Naples,WaterPlant,EPA FRS-style public listing
+City of Sarasota WWTP,27.3100,-82.5400,Sarasota,WaterPlant,EPA FRS-style public listing
+Hillsborough County South County WWTP,27.7200,-82.3800,Riverview,WaterPlant,EPA FRS-style public listing
+Lee County Three Oaks Pump Station,26.5000,-81.8000,Estero,Pump,EPA FRS-style public listing
+Charlotte County East Port WWTP,26.9800,-82.0500,Port Charlotte,WaterPlant,EPA FRS-style public listing
