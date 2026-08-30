@@ -6,6 +6,7 @@ from typing import Any
 
 from api.models import Asset, Telemetry, WeatherContext
 from api.services.graph import cached_graph, downstream_impact
+from api.services.impact_economy import customers_for_asset, is_critical
 from api.services.llm import suggest_action_level
 
 
@@ -57,7 +58,17 @@ def build_asset_facts(asset: Asset) -> dict[str, Any]:
             {
                 "risk": asset.risk_score,
                 "conflict_flag": asset.conflict_flag,
+                "weather": weather,
+                "sensors": sensors,
+                "elevation": float(asset.elevation),
+                "operational_state": asset.operational_state,
             }
         ),
+        "operational_state": asset.operational_state,
+        "baseline_load": (
+            float(asset.baseline_load) if asset.baseline_load is not None else None
+        ),
+        "customers_served": customers_for_asset(asset),
+        "critical_lifeline": is_critical(asset.asset_type),
     }
     return facts

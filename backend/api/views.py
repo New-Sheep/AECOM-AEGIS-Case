@@ -10,16 +10,34 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.models import Asset, AuditLog, ShadowLog, Telemetry, WeatherContext
+from api.models import Asset, AuditLog, ScenarioClock, ShadowLog, Telemetry, WeatherContext
 from api.services.briefing import build_asset_facts
 from api.services.graph import cached_graph, downstream_impact, hospital_linked_ids
 from api.services.llm import EXEC_TOKEN, generate_action_brief, suggest_action_level
+from api.services.scenario import clock_payload
+from api.services.impact_economy import (
+    customer_impact,
+    customers_for_asset,
+    dependency_impact,
+    finance_breakdown,
+    is_critical,
+    region_situation,
+    site_explain,
+)
 
-VALID_ACTIONS = {"load_shed", "reroute", "deenergize"}
+VALID_ACTIONS = {
+    "load_shed",
+    "reroute",
+    "deenergize",
+    "restore_load",
+    "reenergize",
+}
 ACTION_AUTH = {
     "load_shed": "L1",
     "reroute": "L2",
     "deenergize": "L4",
+    "restore_load": "L1",
+    "reenergize": "L4",
 }
 
 
@@ -62,6 +80,14 @@ class RiskMapView(APIView):
                     "elevation": float(asset.elevation),
                     "scada_link_id": asset.scada_link_id,
                     "is_anomaly": bool(tel.is_anomaly) if tel else False,
+                    "operational_state": asset.operational_state,
+                    "baseline_load": (
+                        float(asset.baseline_load)
+                        if asset.baseline_load is not None
+                        else None
+                    ),
+                    "customers_served": customers_for_asset(asset),
+                    "critical_lifeline": is_critical(asset.asset_type),
                 }
             )
 
@@ -109,22 +135,27 @@ class DashboardHeaderView(APIView):
 
         wind = float(wx.wind_speed) if wx else 0.0
         surge = float(wx.flood_surge_level) if wx else 0.0
-        storm_raw = (wx.storm_category if wx else "") or "unknown"
-        # Operator-facing label (legacy seed used ConflictDemo / Sprint2-Demo)
-        if storm_raw in {"ConflictDemo", "Sprint2-Demo", "demo", "unknown", "Cat3"}:
-            storm = "Hurricane Ian"
+        storm_raw = (wx.storm_category if wx else "") or ""
+        # Event-agnostic: keep real category; map only legacy seed placeholders
+        legacy = {"ConflictDemo", "Sprint2-Demo", "demo", "unknown", "Cat3", ""}
+        if storm_raw.strip() in legacy:
+            storm = "Active severe weather"
         else:
-            storm = storm_raw
+            storm = storm_raw.strip()
 
-        if conflict_count or high_risk_count >= 5 or wind > 100:
+        # Threat = weather/risk rollup; CRITICAL reserved for decision queue or many high-risk
+        if conflict_count > 0 or high_risk_count >= 5:
             threat = "CRITICAL"
-        elif high_risk_count >= 2 or wind > 70:
+        elif wind > 100 or high_risk_count >= 2 or wind > 70:
             threat = "ELEVATED"
         elif high_risk_count >= 1:
             threat = "WATCH"
         else:
             threat = "NORMAL"
 
+        severe_weather = wind > 70 or surge > 5.0
+        clock = clock_payload(ScenarioClock.get_solo())
+        fin = finance_breakdown()
         return Response(
             {
                 "threat_level": threat,
@@ -134,10 +165,16 @@ class DashboardHeaderView(APIView):
                 "conflict_count": conflict_count,
                 "high_risk_count": high_risk_count,
                 "dollars_at_risk": round(dollars, 2),
+                "illustrative_outage_cost_usd": fin["illustrative_outage_cost_usd"],
+                "customers_at_risk": fin["customers_at_risk"],
+                "hours_at_risk": fin["hours_at_risk"],
+                "finance_methodology": fin["methodology"],
                 "impact_tally": impact_tally,
                 "asset_count": len(assets),
                 "sprint": 4,
-                "scenario": "Active emergency: Southwest Florida",
+                "scenario": "Active emergency · service territory",
+                "severe_weather": severe_weather,
+                **clock,
                 "data_stack": [
                     "Public weather and flood readings",
                     "Equipment sensor readings (demo)",
@@ -239,7 +276,7 @@ class ForecastView(APIView):
 
 
 class ControlShutdownView(APIView):
-    """POST /api/v1/control/shutdown/"""
+    """POST /api/v1/control/shutdown/ — protect + restore actions (stateful)."""
 
     def post(self, request: Request) -> Response:
         data = request.data if isinstance(request.data, dict) else {}
@@ -275,11 +312,15 @@ class ControlShutdownView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if action_level == "deenergize":
+        op = asset.operational_state or Asset.OperationalState.NORMAL
+
+        if action_level in {"deenergize", "reenergize"}:
             if token != EXEC_TOKEN:
                 return Response(
                     {
-                        "detail": f"L4 deenergize requires authorization_token={EXEC_TOKEN}",
+                        "detail": (
+                            f"{action_level} requires authorization_token={EXEC_TOKEN}"
+                        ),
                     },
                     status=status.HTTP_403_FORBIDDEN,
                 )
@@ -289,26 +330,84 @@ class ControlShutdownView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Idempotency / legality
+        if action_level == "load_shed" and op in {
+            Asset.OperationalState.LOAD_REDUCED,
+            Asset.OperationalState.DEENERGIZED,
+        }:
+            return Response(
+                {
+                    "detail": (
+                        f"Reduce load already applied or site is shut down "
+                        f"(state={op}). Use restore/re-energize if needed."
+                    ),
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        if action_level == "deenergize" and op == Asset.OperationalState.DEENERGIZED:
+            return Response(
+                {"detail": "Site is already shut down (deenergized)."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        if action_level == "reroute" and op == Asset.OperationalState.DEENERGIZED:
+            return Response(
+                {"detail": "Cannot reroute while site is shut down. Re-energize first."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        if action_level == "restore_load" and op != Asset.OperationalState.LOAD_REDUCED:
+            return Response(
+                {
+                    "detail": (
+                        f"restore_load only valid when load_reduced (state={op})."
+                    ),
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        if action_level == "reenergize" and op != Asset.OperationalState.DEENERGIZED:
+            return Response(
+                {
+                    "detail": (
+                        f"reenergize only valid when deenergized (state={op})."
+                    ),
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
         facts = build_asset_facts(asset)
         ai_rec = suggest_action_level(facts)
         auth_level = ACTION_AUTH[action_level]
 
-        tel = (
-            Telemetry.objects.filter(asset=asset).order_by("-timestamp").first()
-        )
+        tel = Telemetry.objects.filter(asset=asset).order_by("-timestamp").first()
         load_before: float | None = float(tel.load) if tel else None
         load_after: float | None = load_before
         conflict_cleared = False
 
+        def _ensure_baseline() -> None:
+            if asset.baseline_load is None and load_before is not None:
+                asset.baseline_load = float(load_before)
+
+        def _target_restore() -> float:
+            if asset.baseline_load is not None:
+                return float(asset.baseline_load)
+            return 0.8 if action_level == "restore_load" else 0.7
+
         if action_level == "load_shed":
+            _ensure_baseline()
             if tel is not None and load_before is not None:
                 load_after = max(0.05, round(load_before * 0.8, 4))
                 tel.load = load_after
                 tel.save(update_fields=["load"])
+            asset.operational_state = Asset.OperationalState.LOAD_REDUCED
             if asset.conflict_flag:
                 asset.conflict_flag = False
-                asset.save(update_fields=["conflict_flag"])
                 conflict_cleared = True
+            asset.save(
+                update_fields=[
+                    "operational_state",
+                    "baseline_load",
+                    "conflict_flag",
+                ]
+            )
             outcome = "Load reduced ~20% on this site (demo)."
             if load_before is not None and load_after is not None:
                 human_summary = (
@@ -321,23 +420,32 @@ class ControlShutdownView(APIView):
                 )
             if conflict_cleared:
                 human_summary += " Attention flag cleared for this site."
+
         elif action_level == "reroute":
             outcome = "Reroute request logged for operators."
             human_summary = (
                 f"Reroute request logged for {asset.name}. "
                 "Field crews must still execute the switch. Sensors are unchanged for now."
             )
-        else:
-            # L4 demo OT: drop load; clear this asset's conflict only
+
+        elif action_level == "deenergize":
+            _ensure_baseline()
             if tel is not None:
                 load_after = 0.0
                 tel.load = load_after
                 tel.save(update_fields=["load"])
             had_conflict = bool(asset.conflict_flag)
+            asset.operational_state = Asset.OperationalState.DEENERGIZED
             if had_conflict:
                 asset.conflict_flag = False
-                asset.save(update_fields=["conflict_flag"])
                 conflict_cleared = True
+            asset.save(
+                update_fields=[
+                    "operational_state",
+                    "baseline_load",
+                    "conflict_flag",
+                ]
+            )
             outcome = "Site shut down (demo simulation)."
             parts = [
                 f"Shut down {asset.name}: load set to 0 (demo, no real breaker trip)."
@@ -348,12 +456,43 @@ class ControlShutdownView(APIView):
                 parts.append("Proceeded without the conflict override checkbox.")
             human_summary = " ".join(parts)
 
+        elif action_level == "restore_load":
+            target = _target_restore()
+            if tel is not None:
+                load_after = round(target, 4)
+                tel.load = load_after
+                tel.save(update_fields=["load"])
+            asset.operational_state = Asset.OperationalState.NORMAL
+            asset.save(update_fields=["operational_state"])
+            outcome = "Load restored toward baseline (demo)."
+            human_summary = (
+                f"Restored load on {asset.name} "
+                f"from {load_before if load_before is not None else '-'} "
+                f"to {load_after if load_after is not None else target:.2f} "
+                "(demo restore — real grids restore in stages)."
+            )
+
+        else:  # reenergize
+            target = _target_restore()
+            if tel is not None:
+                load_after = round(target, 4)
+                tel.load = load_after
+                tel.save(update_fields=["load"])
+            asset.operational_state = Asset.OperationalState.NORMAL
+            asset.save(update_fields=["operational_state"])
+            outcome = "Site re-energized (demo simulation)."
+            human_summary = (
+                f"Re-energized {asset.name}: load set to {load_after:.2f} "
+                "(demo, no real breaker close)."
+            )
+
         remaining_conflicts = list(
             Asset.objects.filter(conflict_flag=True)
             .order_by("external_id")
             .values_list("name", flat=True)[:8]
         )
         remaining_count = Asset.objects.filter(conflict_flag=True).count()
+        asset.refresh_from_db()
 
         audit = AuditLog.objects.create(
             user_id=user_id,
@@ -386,11 +525,97 @@ class ControlShutdownView(APIView):
                 "load_before": load_before,
                 "load_after": load_after,
                 "conflict_cleared": conflict_cleared,
+                "operational_state": asset.operational_state,
                 "remaining_conflict_count": remaining_count,
                 "remaining_conflict_sites": remaining_conflicts,
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class ScenarioTickView(APIView):
+    """POST /api/v1/scenario/tick/"""
+
+    def post(self, request: Request) -> Response:
+        from api.services.scenario import tick_scenario
+
+        data = request.data if isinstance(request.data, dict) else {}
+        force = bool(data.get("force", False))
+        body = tick_scenario(force=force)
+        return Response(body)
+
+
+class ScenarioResetView(APIView):
+    """POST /api/v1/scenario/reset/"""
+
+    def post(self, request: Request) -> Response:
+        from api.services.scenario import reset_scenario
+
+        data = request.data if isinstance(request.data, dict) else {}
+        seed = int(data.get("seed") or 42)
+        body = reset_scenario(seed=seed)
+        return Response(body)
+
+
+class ScenarioPauseView(APIView):
+    """POST /api/v1/scenario/pause/  body: {paused: bool}"""
+
+    def post(self, request: Request) -> Response:
+        from api.services.scenario import set_paused
+
+        data = request.data if isinstance(request.data, dict) else {}
+        paused = bool(data.get("paused", True))
+        return Response(set_paused(paused))
+
+
+class ExplainSiteView(APIView):
+    """GET /api/v1/explain/site/<asset_id>/"""
+
+    def get(self, request: Request, asset_id: str) -> Response:
+        try:
+            asset = Asset.objects.get(external_id=asset_id)
+        except Asset.DoesNotExist:
+            return Response(
+                {"detail": f"Asset {asset_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(site_explain(asset))
+
+
+class ExplainRegionView(APIView):
+    """GET /api/v1/explain/region/"""
+
+    def get(self, request: Request) -> Response:
+        return Response(region_situation())
+
+
+class ExplainCustomersView(APIView):
+    """GET /api/v1/explain/customers/?asset_id="""
+
+    def get(self, request: Request) -> Response:
+        asset_id = str(request.query_params.get("asset_id") or "").strip() or None
+        return Response(customer_impact(asset_id=asset_id))
+
+
+class ExplainFinanceView(APIView):
+    """GET /api/v1/explain/finance/"""
+
+    def get(self, request: Request) -> Response:
+        return Response(finance_breakdown())
+
+
+class ExplainDependenciesView(APIView):
+    """GET /api/v1/explain/dependencies/<asset_id>/"""
+
+    def get(self, request: Request, asset_id: str) -> Response:
+        try:
+            asset = Asset.objects.get(external_id=asset_id)
+        except Asset.DoesNotExist:
+            return Response(
+                {"detail": f"Asset {asset_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(dependency_impact(asset))
 
 
 class AssistantChatView(APIView):
@@ -404,6 +629,7 @@ class AssistantChatView(APIView):
         message = str(data.get("message") or "").strip()
         mode = str(data.get("mode") or "fake").strip().lower() or "fake"
         history = data.get("history") if isinstance(data.get("history"), list) else []
+        conversation_id = str(data.get("conversation_id") or "").strip() or None
         if not asset_id:
             return Response(
                 {"detail": "asset_id is required"},
@@ -420,6 +646,7 @@ class AssistantChatView(APIView):
                 message=message,
                 history=history,
                 mode=mode,
+                conversation_id=conversation_id,
             )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)

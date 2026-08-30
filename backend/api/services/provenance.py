@@ -21,7 +21,8 @@ DATA_STACK = [
     "LangGraph + NVIDIA NIM briefs",
 ]
 
-SCENARIO = "Hurricane Ian · SW Florida"
+# Demo dataset label only — product chrome uses header.scenario (event-agnostic).
+SCENARIO = "Active emergency · service territory"
 
 
 @lru_cache(maxsize=1)

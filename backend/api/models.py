@@ -14,6 +14,11 @@ class Asset(models.Model):
         HOSPITAL = "Hospital", "Hospital"
         WATER_PLANT = "WaterPlant", "WaterPlant"
 
+    class OperationalState(models.TextChoices):
+        NORMAL = "normal", "Normal"
+        LOAD_REDUCED = "load_reduced", "Load reduced"
+        DEENERGIZED = "deenergized", "Deenergized"
+
     external_id = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=128)
     asset_type = models.CharField(max_length=32, choices=AssetType.choices)
@@ -28,6 +33,12 @@ class Asset(models.Model):
     confidence = models.FloatField(default=1.0)
     conflict_flag = models.BooleanField(default=False)
     drivers_json = models.JSONField(default=list, blank=True)
+    operational_state = models.CharField(
+        max_length=32,
+        choices=OperationalState.choices,
+        default=OperationalState.NORMAL,
+    )
+    baseline_load = models.FloatField(null=True, blank=True)
 
     class Meta:
         ordering = ["external_id"]
@@ -116,3 +127,39 @@ class ShadowLog(models.Model):
             f"{self.asset.external_id}: AI={self.ai_predicted_action} "
             f"human={self.human_actual_action}"
         )
+
+
+class ScenarioClock(models.Model):
+    """Singleton-ish living-demo clock (one row id=1)."""
+
+    class Phase(models.TextChoices):
+        APPROACH = "approach", "Approach"
+        PEAK = "peak", "Peak"
+        LANDFALL = "landfall", "Landfall"
+        AFTERMATH = "aftermath", "Aftermath"
+
+    sim_phase = models.CharField(
+        max_length=32, choices=Phase.choices, default=Phase.PEAK
+    )
+    sim_tick = models.PositiveIntegerField(default=0)
+    paused = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "scenario clock"
+        verbose_name_plural = "scenario clocks"
+
+    def __str__(self) -> str:
+        return f"{self.sim_phase} tick={self.sim_tick} paused={self.paused}"
+
+    @classmethod
+    def get_solo(cls) -> "ScenarioClock":
+        obj, _ = cls.objects.get_or_create(
+            pk=1,
+            defaults={"sim_phase": cls.Phase.PEAK, "sim_tick": 0, "paused": False},
+        )
+        return obj
+
+    def time_label(self) -> str:
+        minutes = int(self.sim_tick) * 1
+        return f"T+{minutes // 60:02d}:{minutes % 60:02d}"

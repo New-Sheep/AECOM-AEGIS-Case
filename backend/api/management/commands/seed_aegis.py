@@ -81,7 +81,8 @@ class Command(BaseCommand):
                 storm_category="Hurricane Ian",
             )
 
-        # Guarantee physics-critical demo asset SUB-001 for ConflictFlag after heartbeat clamp
+        # Demo guarantee for assessor path: SUB-001 ConflictFlag after heartbeat clamp
+        # (sample coastal-hurricane data, not a permanent product lock-in)
         demo = by_ext.get("SUB-001")
         if demo:
             Telemetry.objects.filter(asset=demo).delete()

@@ -8,11 +8,19 @@ from api.views import (
     BriefView,
     ControlShutdownView,
     DashboardHeaderView,
+    ExplainCustomersView,
+    ExplainDependenciesView,
+    ExplainFinanceView,
+    ExplainRegionView,
+    ExplainSiteView,
     ForecastView,
     HealthView,
     ImpactView,
     PredictView,
     RiskMapView,
+    ScenarioPauseView,
+    ScenarioResetView,
+    ScenarioTickView,
 )
 
 urlpatterns = [
@@ -31,11 +39,21 @@ urlpatterns = [
     path("dashboard/header/", DashboardHeaderView.as_view(), name="dashboard_header"),
     path("control/shutdown/", ControlShutdownView.as_view(), name="control_shutdown"),
     path("assistant/chat/", AssistantChatView.as_view(), name="assistant_chat"),
-    # Nervous system (whiteboard)
+    path("scenario/tick/", ScenarioTickView.as_view(), name="scenario_tick"),
+    path("scenario/reset/", ScenarioResetView.as_view(), name="scenario_reset"),
+    path("scenario/pause/", ScenarioPauseView.as_view(), name="scenario_pause"),
+    path("explain/site/<str:asset_id>/", ExplainSiteView.as_view(), name="explain_site"),
+    path("explain/region/", ExplainRegionView.as_view(), name="explain_region"),
+    path("explain/customers/", ExplainCustomersView.as_view(), name="explain_customers"),
+    path("explain/finance/", ExplainFinanceView.as_view(), name="explain_finance"),
+    path(
+        "explain/dependencies/<str:asset_id>/",
+        ExplainDependenciesView.as_view(),
+        name="explain_dependencies",
+    ),
     path("predict/", PredictView.as_view(), name="predict"),
     path("impact/<str:node_id>/", ImpactView.as_view(), name="impact"),
     path("brief/", BriefView.as_view(), name="brief"),
-    # LangGraph agent
     path("agent/run/", AgentRunView.as_view(), name="agent_run"),
     path("agent/resume/", AgentResumeView.as_view(), name="agent_resume"),
 ]

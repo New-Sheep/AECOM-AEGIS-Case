@@ -2,9 +2,9 @@
 
 **AEGIS** (AI-Enabled Grid & Infrastructure Shield) for fictional client **Southeastern Grid & Water (SGW)**.
 
-**UI:** Streamlit Command Center for executives and operators. Plain English only on the main screen. Fast standard summaries by default; **Advanced** for live AI. Click map dots to select a site; **Reduce load** / **Shut down** under the map. Ask AEGIS answers newest-first.
+**UI:** Streamlit Command Center for executives and operators. Plain English on the main screen. Fast standard summaries by default; **Advanced** for live AI. Click map dots to select a site; **Reduce load** / **Shut down** under the map. **Ask AEGIS** is a bottom-right widget with tool chips; write actions need **Confirm**.
 
-**Demo data:** Hybrid **Hurricane Ian + SW Florida** GIS + **Open-Meteo** wind + **NOAA CO-OPS** surge + **ETT ETTh1** oil_temp/load proxy (not SGW SCADA). See [`docs/15-DATA-PROVENANCE.md`](docs/15-DATA-PROVENANCE.md).
+**Product scope:** Multi-hazard Shield for unforeseen severe weather (any forecasted emergency). **Demo data** currently uses a coastal hurricane case study (Hurricane Ian + SW Florida GIS + Open-Meteo wind + NOAA CO-OPS surge + ETT ETTh1 oil_temp/load proxy — not SGW SCADA). See [`docs/15-DATA-PROVENANCE.md`](docs/15-DATA-PROVENANCE.md).
 
 ## Docs
 
@@ -13,6 +13,8 @@
 - [`docs/13-SPRINT-3-PLAN.md`](docs/13-SPRINT-3-PLAN.md)
 - [`docs/14-SPRINT-4-LANGGRAPH.md`](docs/14-SPRINT-4-LANGGRAPH.md)
 - [`docs/15-DATA-PROVENANCE.md`](docs/15-DATA-PROVENANCE.md)
+- [`docs/16-OPERATOR-UX-DYNAMIC-SIM.md`](docs/16-OPERATOR-UX-DYNAMIC-SIM.md) — chrome, idempotent controls, restore, living scenario + alarms
+- [`docs/17-CRISIS-STRATEGIST-EXPLAINABILITY.md`](docs/17-CRISIS-STRATEGIST-EXPLAINABILITY.md) — site/region strategist, customers, finance transparency, grounded tools
 
 ## Setup
 
@@ -38,6 +40,8 @@ copy .env.example .env
 # re-run train_xgb.py → skips if feature fingerprint unchanged; use --force to refit
 .\.venv\Scripts\python.exe backend\manage.py migrate
 .\.venv\Scripts\python.exe backend\manage.py seed_aegis --flush
+# Spread Low / Watch / High / Needs attention for map demos
+.\.venv\Scripts\python.exe backend\manage.py diversify_demo_map
 .\.venv\Scripts\python.exe backend\manage.py run_heartbeat
 ```
 
@@ -63,13 +67,14 @@ $env:AEGIS_API_BASE="http://127.0.0.1:8000"
 .\.venv\Scripts\streamlit.exe run frontend\dashboard.py
 ```
 
-The Command Center is written for first-time operators: short site names, no engineer jargon on the main screen, **Ask AEGIS**, map click + quick actions, and human approval records. Stack details stay under **Advanced** / docs.
+The Command Center is written for first-time operators: short site names, no engineer jargon on the main screen, map click + quick actions, human approval records, and **Ask AEGIS** as a corner widget (tools + chat). Stack details stay under **Advanced** / docs.
 
 **Operator notes**
 
 - **Reduce load** cuts that site's load ~20% and clears that site's attention flag so the top banner count drops (demo simulation).
 - **Shut down** sets load to 0 and clears that site's attention flag.
 - Banner goes **2 → 1 → 0** as you handle each flagged site (acting on one site does not clear others).
+- **Ask AEGIS** (sidebar expander): open the widget, use tool chips or chat. **Confirm** is required before Reduce load / Shut down from the assistant.
 - Re-run `seed_aegis --flush` + `run_heartbeat` after pulling so site names (e.g. **Fort Myers Beach**) and storm label refresh.
 
 ### Demo paths
@@ -77,8 +82,8 @@ The Command Center is written for first-time operators: short site names, no eng
 **A — Attention warning → action (Fort Myers Beach)**
 
 1. Select **Fort Myers Beach** (or click its red map dot).
-2. Read **Summary** + **Readings**. Optional: **Ask AEGIS** → "Explain this warning".
-3. Use **Site actions** under the map, or Approve **Shut down** with token `AEGIS-EXEC-DEMO` → load drops; attention flag clears; banner count drops.
+2. Read **Summary** + **Readings**. Optional: open **Ask AEGIS** → "Explain this warning" or "What should I do?" then **Confirm**.
+3. Or use **Site actions** under the map / Approve form with token `AEGIS-EXEC-DEMO`.
 
 **B — Unusual sensors check**
 
@@ -113,7 +118,7 @@ data/           assets/telemetry/deps + raw/ (Ian GIS, open_meteo_ian, ett)
 artifacts/      xgb_risk.joblib, isolation_forest.joblib
 scripts/        build_realistic_demo_data, refresh_telemetry_realistic, train_xgb, backtest_storm
 backend/api/agent/   LangGraph state machine
-frontend/       Streamlit Command Center (theme, map, intel, Ask AEGIS, HITL)
+frontend/       Streamlit Command Center (theme, map, intel, Ask AEGIS sidebar, HITL)
 docs/           research + sprint plans + DATA-PROVENANCE
 ```
 

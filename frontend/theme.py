@@ -17,6 +17,14 @@ html, body, [class*="css"] {
 .stApp {
   background: linear-gradient(165deg, #0b1017 0%, #121a24 42%, #0e1520 100%);
   color: #e8eef6;
+  /* Allow left-edge collapsedControl to paint; clip only horizontal page scroll */
+  overflow-x: clip;
+}
+html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main {
+  max-width: 100vw !important;
+}
+[data-testid="stMainBlockContainer"] {
+  max-width: 100% !important;
 }
 [data-testid="stSidebar"] {
   background: #0a0f16;
@@ -60,12 +68,32 @@ h1, h2, h3 { letter-spacing: 0.02em; color: #f2f6fb !important; }
 .aegis-chip.cyan { background: #0f2a36; color: #5ec8e8; border: 1px solid #1f5f78; }
 .aegis-kpi-row {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.55rem;
   margin: 0.35rem 0 0.85rem 0;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
+  .aegis-kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
   .aegis-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.aegis-eng-details {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #c5d4e4;
+}
+.aegis-eng-details h1,
+.aegis-eng-details h2,
+.aegis-eng-details h3 {
+  font-size: 0.95rem !important;
+  font-weight: 600;
+  margin: 0.55rem 0 0.25rem 0;
+  color: #e8eef6;
+}
+.aegis-eng-details p { margin: 0.25rem 0; }
+.aegis-weather-note {
+  font-size: 0.82rem; color: #9eb6d0; margin: -0.35rem 0 0.75rem 0;
 }
 .aegis-kpi {
   background: #121c28; border: 1px solid #243246; border-radius: 10px;
@@ -150,6 +178,93 @@ iframe[title*="streamlit_folium"],
 iframe[title*="folium"] {
   height: 300px !important;
   max-height: 300px !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+.aegis-map-wrap,
+.aegis-map-wrap iframe,
+.aegis-map-wrap div[data-testid="stCustomComponentV1"] {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Ask AEGIS floating dock — pin ONLY the innermost vertical block that
+   directly contains the float marker (never stVerticalBlock ancestors). */
+div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] .aegis-ask-float-root) {
+  position: fixed !important;
+  bottom: 1.1rem !important;
+  right: 1.1rem !important;
+  width: min(380px, calc(100vw - 2rem)) !important;
+  max-height: min(70vh, 640px) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  z-index: 1000 !important;
+  background: #0c121a !important;
+  border: 1px solid #c0392b !important;
+  border-radius: 14px !important;
+  padding: 0.65rem 0.75rem 0.85rem 0.75rem !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55) !important;
+}
+div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] .aegis-ask-float-root.aegis-ask-collapsed) {
+  width: min(220px, calc(100vw - 2rem)) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0.55rem 0.65rem !important;
+}
+.aegis-ask-float-root {
+  display: none;
+}
+.aegis-ask-shell {
+  border: 1px solid #5a2a28;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #1a1214 0%, #0f1722 100%);
+  padding: 0.55rem 0.7rem 0.55rem 0.7rem;
+  margin: 0 0 0.45rem 0;
+}
+.aegis-ask-pill-label {
+  margin-bottom: 0.35rem;
+}
+.aegis-ask-title {
+  font-weight: 800; color: #ffe8e4; font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.12rem;
+}
+.aegis-ask-sub {
+  color: #c9b4ae; font-size: 0.78rem; margin-bottom: 0;
+  line-height: 1.35;
+}
+.aegis-ask-answer {
+  background: #121a24;
+  border: 1px solid #2a3b50;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  margin: 0.35rem 0 0.55rem 0;
+}
+/* Hide Streamlit input/form keyboard hints in the dock */
+div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] .aegis-ask-float-root)
+  [data-testid="InputInstructions"],
+div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] .aegis-ask-float-root)
+  .stTextInput + div,
+div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] .aegis-ask-float-root)
+  [data-testid="stCaptionContainer"]:has(+ [data-testid="stTextInput"]) {
+  display: none !important;
+}
+[data-testid="stStatusWidget"] {
+  visibility: hidden !important;
+  height: 0 !important;
+}
+/* Do NOT hide stToolbar — Streamlit puts the collapsed-sidebar reopen
+   control there. Keep Deploy/Share quieter without removing the host. */
+[data-testid="stToolbar"] [data-testid="stAppDeployButton"],
+[data-testid="stToolbar"] .stAppDeployButton,
+header[data-testid="stHeader"] a[href*="share"] {
+  display: none !important;
+}
+[data-testid="collapsedControl"] {
+  visibility: visible !important;
+  display: flex !important;
+  z-index: 100000 !important;
+  opacity: 1 !important;
 }
 </style>
 """
@@ -158,14 +273,12 @@ _PAREN_SUFFIX = re.compile(
     r"\s*\((?:[^)]*demo[^)]*|Ian[^)]*|conflict[^)]*)\)\s*",
     re.IGNORECASE,
 )
-_TAP_SUFFIX = re.compile(r"\s+Tap\s*$", re.IGNORECASE)
 
 
 def display_name(name: str | None, fallback: str = "") -> str:
-    """Short operator-facing site label (strip demo / Ian suffixes)."""
+    """Short operator-facing site label (strip demo / Ian suffixes only)."""
     raw = (name or "").strip() or (fallback or "").strip() or "-"
     cleaned = _PAREN_SUFFIX.sub("", raw).strip()
-    cleaned = _TAP_SUFFIX.sub("", cleaned).strip()
     return cleaned or raw
 
 
@@ -177,31 +290,53 @@ def seriousness(risk: float, conflict: bool = False) -> str:
     return "Low"
 
 
+def risk_band_label(risk: float, conflict: bool = False) -> str:
+    """Match backend impact_economy.risk_band for filters / finders."""
+    if conflict:
+        return "Needs attention"
+    if risk < 0.3:
+        return "Low"
+    if risk <= 0.7:
+        return "Watch"
+    return "High"
+
+
 def inject_theme() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
 
 
 def brand_header(*, api_ok: bool, api_base: str | None = None) -> None:
     _ = api_base
-    pill = "ok" if api_ok else "crit"
-    status = "API ONLINE" if api_ok else "API DOWN"
-    st.markdown(
-        f"""
-        <div class="aegis-brand">
-          <span class="mark">AEGIS</span>
-          <span class="sub">Shield · Southeastern Grid &amp; Water</span>
-          <span class="aegis-pill {pill}">{status}</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # Doc 16: demote healthy API status; only shout when DOWN
+    if api_ok:
+        st.markdown(
+            """
+            <div class="aegis-brand">
+              <span class="mark">AEGIS</span>
+              <span class="sub">Shield · Southeastern Grid &amp; Water</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            """
+            <div class="aegis-brand">
+              <span class="mark">AEGIS</span>
+              <span class="sub">Shield · Southeastern Grid &amp; Water</span>
+              <span class="aegis-pill crit">API DOWN</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 def kpi_row(
     *,
     threat: str,
     storm: str,
-    wind_surge: str,
+    wind: str,
+    flood_water: str,
     dollars: str,
     downstream: str,
 ) -> None:
@@ -209,10 +344,11 @@ def kpi_row(
     threat_cls = f"threat-{t}" if t in {"CRITICAL", "ELEVATED", "WATCH"} else ""
     cells = [
         ("Threat level", t, threat_cls),
-        ("Storm name", html.escape(str(storm or "-")), ""),
-        ("Wind / Surge", html.escape(str(wind_surge or "-")), ""),
+        ("Storm / scenario", html.escape(str(storm or "-")), ""),
+        ("Territory wind", html.escape(str(wind or "-")), ""),
+        ("Territory flood", html.escape(str(flood_water or "-")), ""),
         ("Est. $ at risk", html.escape(str(dollars or "-")), ""),
-        ("Sites affected", html.escape(str(downstream or "-")), ""),
+        ("Cascade links", html.escape(str(downstream or "-")), ""),
     ]
     parts = []
     for label, value, extra in cells:
@@ -226,20 +362,43 @@ def kpi_row(
     )
 
 
-def scenario_strip(*, scenario: str, conflict_count: int, data_stack: list[str] | None = None) -> None:
+def scenario_strip(
+    *,
+    scenario: str,
+    conflict_count: int,
+    high_risk_count: int = 0,
+    data_stack: list[str] | None = None,
+    sim_label: str | None = None,
+) -> None:
+    """Top strip: scenario + high-risk count + decision-needed count."""
     _ = data_stack
-    if conflict_count == 1:
-        conflict_chip = '<span class="aegis-chip crit">1 site needs a decision</span>'
-    elif conflict_count > 1:
-        conflict_chip = (
-            f'<span class="aegis-chip crit">{conflict_count} sites need a decision</span>'
+    if high_risk_count == 1:
+        high_chip = '<span class="aegis-chip crit">1 high-risk site</span>'
+    elif high_risk_count > 1:
+        high_chip = (
+            f'<span class="aegis-chip crit">{high_risk_count} high-risk sites</span>'
         )
     else:
-        conflict_chip = '<span class="aegis-chip ok">No sites need attention</span>'
+        high_chip = ""
+    if conflict_count == 1:
+        conflict_chip = '<span class="aegis-chip warn">1 site needs a decision</span>'
+    elif conflict_count > 1:
+        conflict_chip = (
+            f'<span class="aegis-chip warn">{conflict_count} sites need a decision</span>'
+        )
+    else:
+        conflict_chip = '<span class="aegis-chip ok">No sites need a decision</span>'
+    sim_chip = ""
+    if sim_label:
+        sim_chip = (
+            f'<span class="aegis-chip muted">{html.escape(sim_label)}</span>'
+        )
     st.markdown(
         f"""
         <div class="aegis-scenario">
           <span class="aegis-chip cyan">{html.escape(scenario)}</span>
+          {sim_chip}
+          {high_chip}
           {conflict_chip}
         </div>
         """,

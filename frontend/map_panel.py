@@ -12,6 +12,12 @@ from theme import display_name
 EXEC_TOKEN = "AEGIS-EXEC-DEMO"
 MAP_HEIGHT = 300
 
+_STATE_LABEL = {
+    "normal": "Normal",
+    "load_reduced": "Load reduced (demo)",
+    "deenergized": "Shut down (demo)",
+}
+
 
 def risk_color(risk: float, conflict: bool = False) -> str:
     if conflict:
@@ -38,7 +44,11 @@ def _nearest_asset(lat: float, lon: float, assets: list[dict]) -> str | None:
 
 
 def _quick_action(asset_id: str, action: str, *, reason: str) -> None:
-    token = EXEC_TOKEN if action == "deenergize" else "AEGIS-OPS"
+    token = (
+        EXEC_TOKEN
+        if action in {"deenergize", "reenergize"}
+        else "AEGIS-OPS"
+    )
     ok, body, _ = post_json(
         "/api/v1/control/shutdown/",
         {
@@ -108,7 +118,7 @@ def render_map(assets: list[dict], selected: dict, by_id: dict) -> None:
     st.markdown('<div class="aegis-map-wrap">', unsafe_allow_html=True)
     event = st_folium(
         fmap,
-        width=None,
+        width=700,
         height=MAP_HEIGHT,
         returned_objects=["last_object_clicked"],
         key="aegis_map_osm",
@@ -120,6 +130,8 @@ def render_map(assets: list[dict], selected: dict, by_id: dict) -> None:
         nid = _nearest_asset(float(clicked["lat"]), float(clicked["lng"]), assets)
         if nid and nid != st.session_state.get("selected_id"):
             st.session_state.selected_id = nid
+            st.session_state.pop("_synced_site_id", None)
+            st.session_state.pop("site_pick_main", None)
             st.rerun()
 
     st.markdown(
@@ -136,17 +148,67 @@ def render_map(assets: list[dict], selected: dict, by_id: dict) -> None:
     st.caption("Click a dot to select that site. Lines show where power may go out next.")
 
     site = display_name(selected.get("name"), selected.get("id", ""))
+    op = str(selected.get("operational_state") or "normal")
     st.markdown(f"**Site actions:** {site}")
+    st.caption(f"Control state: {_STATE_LABEL.get(op, op)}")
+
+    if op == "deenergized":
+        c1, c2 = st.columns([1, 1.4])
+        with c1:
+            if st.button(
+                "Re-energize",
+                key="map_quick_reenergize",
+                type="primary",
+                width="stretch",
+            ):
+                _quick_action(
+                    selected["id"],
+                    "reenergize",
+                    reason="Map quick action: re-energize",
+                )
+        with c2:
+            st.caption("")
+        return
+
+    if op == "load_reduced":
+        c1, c2, c3 = st.columns([1, 1, 1.2])
+        with c1:
+            if st.button(
+                "Restore load",
+                key="map_quick_restore",
+                width="stretch",
+            ):
+                _quick_action(
+                    selected["id"],
+                    "restore_load",
+                    reason="Map quick action: restore load",
+                )
+        with c2:
+            if st.button(
+                "Shut down",
+                key="map_quick_l4",
+                type="primary",
+                width="stretch",
+            ):
+                _quick_action(
+                    selected["id"],
+                    "deenergize",
+                    reason="Map quick action: shut down",
+                )
+        with c3:
+            st.caption("Reduce load already applied — faded.")
+        return
+
     c1, c2, c3 = st.columns([1, 1, 1.2])
     with c1:
-        if st.button("Reduce load", key="map_quick_l1", use_container_width=True):
+        if st.button("Reduce load", key="map_quick_l1", width="stretch"):
             _quick_action(
                 selected["id"],
                 "load_shed",
                 reason="Map quick action: reduce load",
             )
     with c2:
-        if st.button("Shut down", key="map_quick_l4", type="primary", use_container_width=True):
+        if st.button("Shut down", key="map_quick_l4", type="primary", width="stretch"):
             _quick_action(
                 selected["id"],
                 "deenergize",

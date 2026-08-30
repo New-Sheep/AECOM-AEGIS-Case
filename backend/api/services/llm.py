@@ -35,7 +35,7 @@ _BRIEF_JSON_SCHEMA_HINT = (
     '"cited_sensors":{"load":0.0,"oil_temp":0.0,"voltage":0.0},'
     '"cited_weather":{"wind_speed":0.0,"flood_surge_level":0.0},'
     '"downstream_ids":["str"],"trade_off":"str",'
-    '"recommended_action":"load_shed|reroute|deenergize","summary":"str"'
+    '"recommended_action":"load_shed|reroute|deenergize|monitor","summary":"str"'
     "}"
 )
 
@@ -49,7 +49,12 @@ def use_fake_llm() -> bool:
 
 
 def suggest_action_level(facts: dict[str, Any]) -> str:
-    """Heuristic AI recommendation for ShadowLog / AuditLog."""
+    """Heuristic recommendation: control action, restore, or monitor when stable."""
+    op = str(facts.get("operational_state") or "normal")
+    if op == "deenergized":
+        return "reenergize"
+    if op == "load_reduced":
+        return "restore_load"
     risk = float(facts.get("risk") or 0.0)
     conflict = bool(facts.get("conflict_flag"))
     if conflict or risk > 0.7:
@@ -58,7 +63,19 @@ def suggest_action_level(facts: dict[str, Any]) -> str:
         return "reroute"
     if risk > 0.3:
         return "load_shed"
-    return "load_shed"
+    weather = facts.get("weather") or {}
+    sensors = facts.get("sensors") or {}
+    elev = facts.get("elevation")
+    try:
+        wind = float(weather.get("wind_speed") or 0.0)
+        surge = float(weather.get("flood_surge_level") or 0.0)
+        oil = float(sensors.get("oil_temp") or 0.0)
+        elev_f = float(elev) if elev is not None else None
+    except (TypeError, ValueError):
+        wind, surge, oil, elev_f = 0.0, 0.0, 0.0, None
+    if wind > 100 or oil > 95 or (elev_f is not None and surge > elev_f):
+        return "load_shed"
+    return "monitor"
 
 
 def fake_brief_markdown(facts: dict[str, Any]) -> str:
@@ -117,6 +134,8 @@ def _nvidia_action_brief(facts: dict[str, Any]) -> ActionBrief:
         "Copy numeric values from facts into cited_sensors / cited_weather. "
         "If conflict_flag is true, set conflict_warning to a clear WARNING and "
         "recommended_action must be deenergize. "
+        "If the site looks stable (low risk, no conflict, no extreme wind/surge/oil), "
+        "recommended_action must be monitor — do not suggest load_shed without cause. "
         "trade_off must contrast replacement_cost CapEx vs lifeline outage "
         "(downstream_ids)."
     )

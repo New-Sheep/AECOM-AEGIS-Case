@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-RecommendedAction = Literal["load_shed", "reroute", "deenergize"]
+RecommendedAction = Literal["load_shed", "reroute", "deenergize", "monitor"]
 
 RISK_TOL = 0.02
 NUM_TOL = 0.05  # absolute tolerance for cited floats
@@ -113,8 +113,10 @@ def fake_action_brief(facts: dict[str, Any]) -> ActionBrief:
         action: RecommendedAction = "deenergize"
     elif risk > 0.5:
         action = "reroute"
-    else:
+    elif risk > 0.3:
         action = "load_shed"
+    else:
+        action = "monitor"
     warning = None
     if conflict:
         warning = (
@@ -131,22 +133,50 @@ def fake_action_brief(facts: dict[str, Any]) -> ActionBrief:
     elev = facts.get("elevation")
     wind = (weather or {}).get("wind_speed")
     surge = (weather or {}).get("flood_surge_level")
-    bits = [f"{name} needs attention."]
+    oil = (sensors or {}).get("oil_temp")
+
+    wind_high = False
+    surge_over = False
+    oil_hot = False
     try:
-        if wind is not None and float(wind) > 100:
-            bits.append(f"Wind is high at {float(wind):.0f} mph.")
+        wind_high = wind is not None and float(wind) > 100
     except (TypeError, ValueError):
         pass
     try:
-        if surge is not None and elev is not None and float(surge) > float(elev):
-            bits.append(
-                f"Flood water ({float(surge):.1f} ft) is above the site pad "
-                f"({float(elev):.1f} ft)."
-            )
+        surge_over = (
+            surge is not None and elev is not None and float(surge) > float(elev)
+        )
     except (TypeError, ValueError):
         pass
+    try:
+        oil_hot = oil is not None and float(oil) > 95
+    except (TypeError, ValueError):
+        pass
+
+    bits: list[str] = []
+    if conflict:
+        bits.append(f"{name} needs a decision.")
+    elif wind_high or surge_over or oil_hot or risk > 0.5:
+        bits.append(f"{name} is under watch.")
+    else:
+        bits.append(f"{name} looks stable right now.")
+
+    if wind_high:
+        bits.append(f"Wind is high at {float(wind):.0f} mph.")
+    if surge_over:
+        bits.append(
+            f"Flood water ({float(surge):.1f} ft) is above the site pad "
+            f"({float(elev):.1f} ft)."
+        )
+    if oil_hot:
+        bits.append(f"Oil temperature is elevated at {float(oil):.1f} C.")
     if conflict:
         bits.append("Caution: weather looks dangerous here. Review before shutting down.")
+    # Align action with elevated physics even when model risk is still low
+    if action == "monitor" and (wind_high or surge_over or oil_hot):
+        action = "load_shed"
+        if "under watch" not in " ".join(bits).lower():
+            bits[0] = f"{name} is under watch."
     summary = " ".join(bits)
     return ActionBrief(
         asset_id=asset_id,
@@ -178,6 +208,7 @@ def render_brief_markdown(brief: ActionBrief, *, provider: str = "fake") -> str:
         "load_shed": "Reduce load",
         "reroute": "Reroute power",
         "deenergize": "Shut down equipment",
+        "monitor": "Keep monitoring",
     }.get(brief.recommended_action, brief.recommended_action)
 
     wind = brief.cited_weather.get("wind_speed")
@@ -193,20 +224,27 @@ def render_brief_markdown(brief: ActionBrief, *, provider: str = "fake") -> str:
         warn = brief.conflict_warning or (
             "Flood or high wind at this site. Check readings before you shut anything down."
         )
-        conflict_block = f"\n## Caution\n**WARNING:** {warn}\n"
+        conflict_block = f"\n**Caution**\n**WARNING:** {warn}\n"
+
+    if brief.recommended_action == "monitor":
+        next_step = (
+            f"**{action_plain}**. No control action needed unless conditions worsen."
+        )
+    else:
+        next_step = f"**{action_plain}**. Confirm under Approve an action."
 
     return (
-        f"# Site summary (`{brief.asset_id}`)\n\n"
-        f"## What's happening\n"
+        f"**Site summary** (`{brief.asset_id}`)\n\n"
+        f"**What's happening**\n"
         f"{brief.summary or 'Review this site before acting.'}\n"
         f"{conflict_block}\n"
-        f"## Why it matters\n"
+        f"**Why it matters**\n"
         f"- How serious: **{how}**\n"
         f"- Why: {driver_line}\n"
         f"- Wind: {_n(wind, '{:.0f} mph')}; Flood water: {_n(surge, '{:.1f} ft')}\n"
         f"- Load: {_n(load, '{:.2f}')}; Oil temperature: {_n(oil, '{:.1f} C')}\n\n"
-        f"## Suggested next step\n"
-        f"**{action_plain}**. Confirm under Approve an action.\n\n"
+        f"**Suggested next step**\n"
+        f"{next_step}\n\n"
         f"**Trade-off:** {brief.trade_off}\n"
     )
 

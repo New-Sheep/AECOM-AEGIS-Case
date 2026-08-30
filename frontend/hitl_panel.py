@@ -1,4 +1,4 @@
-"""Approve an action (human-in-the-loop)."""
+"""Approve an action (human-in-the-loop) — collapsed by default."""
 
 from __future__ import annotations
 
@@ -9,18 +9,30 @@ from theme import display_name
 
 EXEC_TOKEN = "AEGIS-EXEC-DEMO"
 
-LEVEL_MAP = {
-    "Reduce load (L1)": "load_shed",
-    "Reroute power (L2)": "reroute",
-    "Acknowledge attention check (L3)": "cross_check",
-    "Shut down equipment (L4)": "deenergize",
-}
-
 _ACTION_PLAIN = {
     "load_shed": "Reduce load",
     "reroute": "Reroute power",
     "deenergize": "Shut down equipment",
+    "restore_load": "Restore load",
+    "reenergize": "Re-energize",
 }
+
+
+def _options_for_state(op: str) -> dict[str, str]:
+    if op == "deenergized":
+        return {"Re-energize": "reenergize"}
+    if op == "load_reduced":
+        return {
+            "Restore load": "restore_load",
+            "Shut down equipment": "deenergize",
+            "Reroute power": "reroute",
+        }
+    return {
+        "Reduce load": "load_shed",
+        "Reroute power": "reroute",
+        "Acknowledge attention check": "cross_check",
+        "Shut down equipment": "deenergize",
+    }
 
 
 def _render_approval_card(body: dict) -> None:
@@ -34,9 +46,9 @@ def _render_approval_card(body: dict) -> None:
     load_line = "-"
     if lb is not None and la is not None:
         load_line = f"{float(lb):.2f} -> {float(la):.2f}"
-    override = "Yes" if body.get("human_override") else "No"
     rem = int(body.get("remaining_conflict_count") or 0)
     sites = body.get("remaining_conflict_sites") or []
+    op = body.get("operational_state") or "-"
 
     st.markdown(
         f"""
@@ -47,7 +59,7 @@ def _render_approval_card(body: dict) -> None:
             <div><b>Site:</b> {site}</div>
             <div><b>Action:</b> {action}</div>
             <div><b>Load:</b> {load_line}</div>
-            <div><b>Override recorded:</b> {override}</div>
+            <div><b>Control state:</b> {op}</div>
             <div><b>Record #:</b> {body.get("audit_id", "-")}</div>
           </div>
         </div>
@@ -63,11 +75,16 @@ def _render_approval_card(body: dict) -> None:
             f"({names}{extra})."
         )
     elif body.get("conflict_cleared"):
-        st.success("No sites need attention on the map.")
+        st.success("No sites need a decision on the map.")
 
 
-def render_hitl_panel(*, selected: dict, brief: dict | None, agent: dict | None) -> None:
-    st.markdown("### Approve an action")
+def render_hitl_panel(
+    *,
+    selected: dict,
+    brief: dict | None,
+    agent: dict | None,
+    name_by_id: dict[str, str] | None = None,
+) -> None:
     structured = (brief or {}).get("structured") or {}
     agent_plan = None
     if agent and agent.get("status") == "completed":
@@ -75,78 +92,102 @@ def render_hitl_panel(*, selected: dict, brief: dict | None, agent: dict | None)
 
     cost = float(selected.get("replacement_cost") or 0)
     site = display_name(selected.get("name"), selected.get("id", ""))
+    op = str(selected.get("operational_state") or "normal")
     downs = (
         structured.get("downstream_ids")
         or (agent_plan or {}).get("impact_nodes")
         or selected.get("downstream_ids")
         or []
     )
-    st.markdown(
-        f"""
-        <div class="aegis-card">
-          <h4>What you are deciding</h4>
-          <div>
-            About <b>${cost:,.0f}</b> to replace <b>{site}</b> vs interrupting power to
-            connected sites{(' (' + ', '.join(downs[:4]) + ')') if downs else ''}.
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    level_label = st.radio("Choose an action", list(LEVEL_MAP.keys()), index=0)
-    action = LEVEL_MAP[level_label]
-
-    if action == "cross_check":
-        st.write(
-            "This step only confirms you reviewed the attention warning "
-            f"(active={bool(selected.get('conflict_flag'))}). "
-            "It does not send a field command. Pick Reduce load, Reroute, or Shut down to act."
+    near_names = []
+    for did in downs[:3]:
+        near_names.append(
+            display_name((name_by_id or {}).get(did), str(did))
         )
-        if st.button("Acknowledge attention check"):
-            st.success("Check acknowledged. Choose an action above when ready.")
-    else:
-        reason = st.text_area("Reason (required)", height=80, key="reason_box")
-        override = st.checkbox(
-            "I disagree with the suggested action (record override)",
-            value=False,
+    near = ", ".join(near_names) if near_names else "nearby dependent sites"
+
+    with st.expander("Record a decision", expanded=False):
+        st.caption(
+            "Prefer the quick buttons under the map when you can. "
+            "Use this form when you need a written reason on the record."
         )
-        if action == "deenergize":
-            token = st.text_input(
-                "Executive authorization token",
-                value=EXEC_TOKEN,
-                help="Demo token for shutdown: AEGIS-EXEC-DEMO",
+        st.markdown(
+            f"""
+            <div class="aegis-card">
+              <h4>What you are deciding</h4>
+              <div>
+                About <b>USD {cost:,.0f}</b> of equipment at <b>{site}</b>
+                vs risk of power loss at <b>{near}</b>.
+              </div>
+              <div style="margin-top:0.4rem;color:#9eb6d0;font-size:0.85rem">
+                Control state: <b>{op.replace('_', ' ')}</b>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        level_map = _options_for_state(op)
+        level_label = st.radio("Choose an action", list(level_map.keys()), index=0)
+        action = level_map[level_label]
+
+        if action == "cross_check":
+            st.write(
+                "This only confirms you reviewed the attention warning. "
+                "It does not send a field command. Pick Reduce load, Reroute, "
+                "or Shut down to act."
             )
+            if st.button("Acknowledge attention check"):
+                st.success("Check acknowledged. Choose an action above when ready.")
         else:
+            reason = st.text_area("Reason (required)", height=80, key="reason_box")
+            confirm = st.checkbox("I confirm this decision", value=False)
             token = "AEGIS-OPS"
-        confirm = st.checkbox("I confirm this decision", value=False)
-
-        if st.button("Submit action", type="primary"):
-            if not reason.strip():
-                st.error("Please enter a reason.")
-            elif not confirm:
-                st.error("Please confirm the decision first.")
-            else:
-                ok, body, _ = post_json(
-                    "/api/v1/control/shutdown/",
-                    {
-                        "asset_id": selected["id"],
-                        "action_level": action,
-                        "authorization_token": token,
-                        "reason_text": reason.strip(),
-                        "user_id": "demo-ic",
-                        "human_override": override,
-                    },
+            override = False
+            with st.expander("Authorization (demo)", expanded=False):
+                override = st.checkbox(
+                    "I disagree with the suggested action (record override)",
+                    value=False,
+                    help="Marks that a human chose a different action than suggested.",
                 )
-                if ok:
-                    st.session_state.last_audit = body
-                    st.session_state.brief_cache = {}
-                    clear_cache()
-                    st.success(body.get("human_summary") or "Action recorded.")
-                    st.rerun()
+                if action in {"deenergize", "reenergize"}:
+                    token = st.text_input(
+                        "Authorization token",
+                        value=EXEC_TOKEN,
+                        help="Demo token is pre-filled. Real systems would use SSO.",
+                    )
                 else:
-                    st.error(body.get("detail") or body)
+                    st.caption("Ops-level actions use the standard demo token.")
+
+            if st.button(
+                "Submit action",
+                type="primary",
+                help="Writes an audit record. Prefer map quick actions for demos.",
+            ):
+                if not reason.strip():
+                    st.error("Please enter a reason.")
+                elif not confirm:
+                    st.error("Please confirm the decision first.")
+                else:
+                    ok, body, _ = post_json(
+                        "/api/v1/control/shutdown/",
+                        {
+                            "asset_id": selected["id"],
+                            "action_level": action,
+                            "authorization_token": token,
+                            "reason_text": reason.strip(),
+                            "user_id": "demo-ic",
+                            "human_override": override,
+                        },
+                    )
+                    if ok:
+                        st.session_state.last_audit = body
+                        st.session_state.brief_cache = {}
+                        clear_cache()
+                        st.success(body.get("human_summary") or "Action recorded.")
+                        st.rerun()
+                    else:
+                        st.error(body.get("detail") or body)
 
     if st.session_state.get("last_audit"):
-        with st.expander("Last approval record", expanded=True):
-            _render_approval_card(st.session_state.last_audit)
+        _render_approval_card(st.session_state.last_audit)
