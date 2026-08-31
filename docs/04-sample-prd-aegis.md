@@ -6,7 +6,8 @@
 **Version:** 1.0-MVP  
 **Status:** In Review  
 
-> **Note:** This is a sample / rough example of Deliverable 1 (PRD). Use as a reference for structure and depth — not as the final submission.
+> **Note:** This is a sample / rough example of Deliverable 1 (PRD). Use as a reference for structure and depth — **not** the final submission.  
+> **Submission document:** [`DELIVERABLE-1-PRD-AEGIS.md`](DELIVERABLE-1-PRD-AEGIS.md)
 
 ---
 

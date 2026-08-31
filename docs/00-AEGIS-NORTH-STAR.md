@@ -7,11 +7,24 @@
 
 | | |
 |--|--|
-| **Status** | Research complete · Ready to draft finals & build |
+| **Status** | **Submission package ready for review** · Prototype **LOCKED** |
 | **Strategy** | **Shield first, Sword second** |
 | **MVP user** | Incident Commander / Executive |
-| **Prototype stack** | FastAPI + Streamlit · mocks · heuristics/XGBoost · NetworkX · GenAI briefing |
+| **Prototype stack** | Django/DRF + Streamlit · hybrid mocks · XGBoost · Isolation Forest · NetworkX · GenAI/FAKE |
 | **Supporting digests** | `01`–`08` in this folder (sources; this file supersedes for decisions) |
+
+### Submission package (Deliverables 1–3)
+
+Written deliverables use **plain case-brief voice** (short sentences, limited jargon). This north star stays the internal thinking log.
+
+| Deliverable | File |
+|-------------|------|
+| D1 PRD | [`DELIVERABLE-1-PRD-AEGIS.md`](DELIVERABLE-1-PRD-AEGIS.md) |
+| D2 Exec briefing | [`DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md`](DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md) |
+| D3 Prototype + README | Repo root [`README.md`](../README.md) (locked) |
+| D3 Video script | [`DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md`](DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md) |
+| Assessor handover | [`18-PROTOTYPE-AND-PRD-HANDOVER.md`](18-PROTOTYPE-AND-PRD-HANDOVER.md) |
+| Brief gap analysis | [`19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md`](19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md) (**gap-fill applied** into D1/D2) |
 
 ---
 
@@ -459,15 +472,15 @@ Use sample briefing (`03`) for **tone**; use **this math** for **numbers**.
 
 Cover all nine required sections; write *your* voice from this north star (samples in `04` are reference only).
 
-- [ ] Problem & business context (§2)  
-- [ ] Assumptions & unknowns (§2.4)  
-- [ ] Users & pain points (§4)  
-- [ ] FR / NFR (§6)  
-- [ ] AI capabilities — Shield Power-Trio + Sword/GNN/CV roadmap (§5)  
-- [ ] Architecture & integrations (§7)  
-- [ ] Data requirements (§7 + domain §2.3)  
-- [ ] Security / governance / HITL (§10)  
-- [ ] Success metrics, MVP scope, priorities (§4, §8, §9)  
+- [x] Problem & business context (§2) → `DELIVERABLE-1-PRD-AEGIS.md`  
+- [x] Assumptions & unknowns (§2.4)  
+- [x] Users & pain points (§4)  
+- [x] FR / NFR (§6)  
+- [x] AI capabilities — Shield Power-Trio + Sword/GNN/CV roadmap (§5)  
+- [x] Architecture & integrations (§7)  
+- [x] Data requirements (§7 + domain §2.3)  
+- [x] Security / governance / HITL (§10)  
+- [x] Success metrics, MVP scope, priorities (§4, §8, §9)  
 
 **PRD emphasis:** structured product thinking for engineers; Big Three; Shield vs Sword; mock→live path.
 
@@ -475,11 +488,11 @@ Cover all nine required sections; write *your* voice from this north star (sampl
 
 ### Deliverable 2 — Executive Management Briefing
 
-- [ ] Strategic value — blindness → Shield → resilience/equity (§2–3)  
-- [ ] Financial / ROI — $30M model + levers (§11)  
-- [ ] Delivery roadmap — Phases 1–3 (§8)  
-- [ ] Governance & compliance — HITL, audit, NERC/PUC narrative (§10)  
-- [ ] Scalability — power→water, coastal hurricane→inland heat/fire (§2.3)  
+- [x] Strategic value — blindness → Shield → resilience/equity (§2–3) → `DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md`  
+- [x] Financial / ROI — $30M model + levers (§11)  
+- [x] Delivery roadmap — Phases 1–3 (§8)  
+- [x] Governance & compliance — HITL, audit, NERC/PUC narrative (§10)  
+- [x] Scalability — power→water, coastal hurricane→inland heat/fire (§2.3)  
 
 **Exec emphasis:** outcomes, realism, governance — not model math.
 
@@ -487,9 +500,9 @@ Cover all nine required sections; write *your* voice from this north star (sampl
 
 ### Deliverable 3 — Prototype + Video
 
-- [ ] Code + README + mocked data (§9)  
-- [ ] One end-to-end workflow: storm → risk → impact → brief → HITL decision  
-- [ ] Video 5–10 min: problem → architecture choices → demo → limits → next  
+- [x] Code + README + mocked data (§9) — prototype **LOCKED**  
+- [x] One end-to-end workflow: storm → risk → impact → brief → HITL decision  
+- [x] Video 5–10 min script: `DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md` (record separately)  
 
 ---
 
@@ -540,11 +553,15 @@ Cover all nine required sections; write *your* voice from this north star (sampl
 |------|------|
 | `01-technical-assessment-brief.md` | Official assignment |
 | `02-domain-expert-brainstorm-electrical-stp.md` | Physics & ops reality |
-| `03-sample-executive-briefing-aegis.md` | Sample exec tone |
-| `04-sample-prd-aegis.md` | Sample PRD structure |
+| `03-sample-executive-briefing-aegis.md` | Sample exec tone (**not** submission) |
+| `04-sample-prd-aegis.md` | Sample PRD structure (**not** submission) |
 | `05`–`08` research-plan-whiteboard-part*.md` | Tutor board digests |
+| `DELIVERABLE-1-PRD-AEGIS.md` | **Submission PRD** |
+| `DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md` | **Submission exec briefing** |
+| `DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md` | **Video narration script** |
+| `18-PROTOTYPE-AND-PRD-HANDOVER.md` | Assessor / interview handover |
 | **`00-AEGIS-NORTH-STAR.md` (this file)** | **Governing plan** |
 
 ---
 
-*North star locked. Draft PRD & exec from §§2–12; build prototype from §§7–10; interview from §§1, 5, 14.*
+*North star locked as the thinking log. Submit the plain-language DELIVERABLE-* files and locked README; interview from §§1, 5, 14.*

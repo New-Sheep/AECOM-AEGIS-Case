@@ -5,7 +5,8 @@
 **Prepared by:** AECOM AI Solution Engineering Team  
 **Focus:** Strategic Value, Financial ROI, and Delivery Roadmap  
 
-> **Note:** This is a sample / rough example of Deliverable 2 (Executive Management Briefing). Use as a reference for tone, structure, and coverage — not as the final submission.
+> **Note:** This is a sample / rough example of Deliverable 2 (tone and slide-style practice only). It is **not** the final submission.  
+> **Submission document:** [`DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md`](DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md) (consultant-style rewrite: decision brief, demo-data ROI, KPIs, mermaid visuals, Leadership FAQ).
 
 ---
 
