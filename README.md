@@ -1,162 +1,254 @@
-# AEGIS - AECOM AI Solution Engineer Case
+# AEGIS — AECOM AI Solution Engineer Case
 
-**Status: PROTOTYPE LOCKED** for submission. No further feature work. Scrappy UI or small quirks are fine. Assess product thinking and the protect-first workflow.
+**Prototype status: LOCKED** for submission. Assess product judgment and the protect-first workflow; small UI quirks are OK.
 
-**AEGIS** (AI-Enabled Grid and Infrastructure Shield) is an AI **decision-support** Command Center for fictional client **Southeastern Grid and Water (SGW)**.
+**Repo:** https://github.com/New-Sheep/AECOM-AEGIS-Case
 
-- **Shield** = protect critical equipment before it is destroyed (this build).  
-- **Sword** = restore power and water fairly after the storm (roadmap only, not in this build).
+**AEGIS** (AI-Enabled Grid and Infrastructure Shield) is an AI **decision-support** Command Center for fictional client **Southeastern Grid and Water (SGW)** (8M+ residents).
 
-Repo: https://github.com/New-Sheep/AECOM-AEGIS-Case
+| Name | Meaning | In this build? |
+|------|---------|----------------|
+| **Shield** | Protect critical equipment before it is destroyed | **Yes** (core workflow) |
+| **Sword** | Restore power and water fairly after the storm | **No** (roadmap only) |
 
----
-
-## How this solution was developed
-
-1. **Brainstorm:** Incomplete client brief; named gaps; domain expert input on floods, heat, and water plants.  
-2. **Research:** Data silos, failure cascades, protect-then-restore priority.  
-3. **Planning:** Locked stack and one operator workflow; what ships first vs later.  
-4. **Implementation:** Working Command Center with hybrid sample data; human must approve actions.
-
-Details: [`docs/18-PROTOTYPE-AND-PRD-HANDOVER.md`](docs/18-PROTOTYPE-AND-PRD-HANDOVER.md).
+AI **advises**. A person must approve reduce load / shut down / restore. Nothing writes into real grid switching.
 
 ---
 
-## Submission package (written + prototype)
+## For assessors (Deliverable 3 checklist)
 
-| Deliverable | Location |
-|-------------|----------|
-| D1 - Product Requirements | [`docs/DELIVERABLE-1-PRD-AEGIS.md`](docs/DELIVERABLE-1-PRD-AEGIS.md) |
-| D2 - Executive briefing | [`docs/DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md`](docs/DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md) |
-| D3 - This prototype | Code + this README |
-| D3 - Video script | [`docs/DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md`](docs/DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md) |
-| Assessor handover | [`docs/18-PROTOTYPE-AND-PRD-HANDOVER.md`](docs/18-PROTOTYPE-AND-PRD-HANDOVER.md) |
-| Assignment brief | [`docs/01-technical-assessment-brief.md`](docs/01-technical-assessment-brief.md) |
-| Data honesty | [`docs/15-DATA-PROVENANCE.md`](docs/15-DATA-PROVENANCE.md) |
-| Brief gap analysis | [`docs/19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md`](docs/19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md) |
+| Brief requirement | Where it lives |
+|-------------------|----------------|
+| All code to run the prototype | This repo (`backend/`, `frontend/`, `scripts/`) |
+| README with setup and run | **This file** (Quick start below) |
+| Architecture, assumptions, limitations | Sections below + linked docs |
+| Sample / mocked data | `data/` (+ `data/raw/`); honesty in [`docs/15-DATA-PROVENANCE.md`](docs/15-DATA-PROVENANCE.md) |
+| Video (5–10 min) | Record using [`docs/DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md`](docs/DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md) |
 
----
-
-## Architecture (snapshot)
-
-```
-Public maps + weather + sample sensor patterns
-    → Seed and refresh (risk score · sensor check · impact graph · validation)
-    → REST API
-    → Command Center (map · summary · human approval · Ask AEGIS · Find site)
-```
-
-| Layer | Choice |
-|-------|--------|
-| API and database | Django + REST + SQLite |
-| Risk | Tree model (XGBoost) with readable drivers |
-| Odd sensors | Isolation Forest |
-| Knock-on impact | NetworkX dependency graph |
-| Plain-language briefs | Optional cloud language service, or offline demo mode |
-| UI | Streamlit Command Center |
-| Governance | Confirm + reason + auth token; audit log |
-
-**Not in prototype:** live SGW control-room feeds, unsupervised switching, Sword crew optimizer, production critical-infrastructure security certification.
+**One core workflow to walk:** emergency Command Center → high-risk site → risk / impact / brief → human-approved protect action → Ask AEGIS priority jump.
 
 ---
 
-## Assumptions and limits
+## Quick start (clone → run)
 
-- Client context is incomplete by design. Working assumptions are explicit in the PRD.  
-- The brief lists hurricane, flood, heatwave, and wildfire. This prototype is a **coastal flood/wind case study** first. Heat and wildfire share the same loop later; equipment oil temperature is not a full heatwave product.  
-- Demo data is Hurricane Ian-themed: public Southwest Florida-style map sites, Open-Meteo wind, NOAA tide gauges for surge feel, and a public transformer time series as a **sensor proxy**. This is **not** live SGW operations data.  
-- Dependency edges are inferred nearest lifelines, not true breaker topology.  
-- `diversify_demo_map` spreads risk bands so the map tells a clear story.  
-- Search may need a click outside the box (or another Find site control) before filters apply.  
-- AI is **advisory only**. No write path into real switching. Demo auth token is not production cyber defense or CIP certification.  
-- Phase 1 coordinates emergency **attention** (shared map, ranked sites, audit). It is not full field dispatch (Sword later).
+**Needs:** Python 3.11+ recommended, Git. Works offline with default `.env` (`FAKE_LLM=1`). No cloud API key required for the demo.
 
----
-
-## Setup
+### Windows (PowerShell)
 
 ```powershell
-cd c:\Users\ankit\Documents\AECOM-AEGIS-Case
+git clone https://github.com/New-Sheep/AECOM-AEGIS-Case.git
+cd AECOM-AEGIS-Case
+
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
-```
 
-`.env` defaults to offline language mode (`FAKE_LLM=1`, no NVIDIA key). Optional live briefs: set `NVIDIA_API_KEY`, `FAKE_LLM=0`, and a model ID from [build.nvidia.com](https://build.nvidia.com).
-
-### Seed demo (if database empty or after pull)
-
-```powershell
 .\.venv\Scripts\python.exe backend\manage.py migrate
 .\.venv\Scripts\python.exe backend\manage.py seed_aegis --flush
 .\.venv\Scripts\python.exe backend\manage.py diversify_demo_map
 .\.venv\Scripts\python.exe backend\manage.py run_heartbeat
 ```
 
-Optional rebuild of CSVs or models (only if regenerating data): see `docs/15-DATA-PROVENANCE.md` and scripts `build_realistic_demo_data.py`, `train_xgb.py`.
-
----
-
-## Run (two terminals)
-
-**API**
+**Terminal 1 — API**
 
 ```powershell
-cd c:\Users\ankit\Documents\AECOM-AEGIS-Case
+cd AECOM-AEGIS-Case
 .\.venv\Scripts\python.exe backend\manage.py runserver 127.0.0.1:8000
 ```
 
-**UI**
+**Terminal 2 — UI**
 
 ```powershell
-cd c:\Users\ankit\Documents\AECOM-AEGIS-Case
+cd AECOM-AEGIS-Case
 $env:AEGIS_API_BASE="http://127.0.0.1:8000"
 .\.venv\Scripts\streamlit.exe run frontend\dashboard.py
 ```
 
-Open the URL Streamlit prints (typically http://localhost:8501). Use `?coach=done` to skip the coach overlay if present.
+Open the URL Streamlit prints (usually http://localhost:8501). Add `?coach=done` to skip the coach overlay if shown.
+
+### macOS / Linux
+
+```bash
+git clone https://github.com/New-Sheep/AECOM-AEGIS-Case.git
+cd AECOM-AEGIS-Case
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+
+python backend/manage.py migrate
+python backend/manage.py seed_aegis --flush
+python backend/manage.py diversify_demo_map
+python backend/manage.py run_heartbeat
+```
+
+**Terminal 1 — API**
+
+```bash
+python backend/manage.py runserver 127.0.0.1:8000
+```
+
+**Terminal 2 — UI**
+
+```bash
+export AEGIS_API_BASE=http://127.0.0.1:8000
+streamlit run frontend/dashboard.py
+```
+
+### Smoke checks
+
+- API health: http://127.0.0.1:8000/api/v1/health/  
+- Optional tests: `python backend/manage.py test api` (from repo root with venv active)
+
+**HITL demo token:** `AEGIS-EXEC-DEMO` (not a real secret).
 
 ---
 
-## Golden demo path (use for video)
+## Golden demo path (video / live session)
 
-1. Confirm header shows active emergency, high-risk count, decision-needed count.  
-2. **Find site:** Show = **High risk** (or click a red map dot). Open a high-risk site (for example Blue Heron Solar or City of Sarasota WWTP).  
-3. Read **Summary** (what is happening / why it matters / suggested next step) and skim **Why this score**.  
-4. Under the map, **Reduce load** or **Shut down** with reason + token `AEGIS-EXEC-DEMO` (or quick buttons).  
-5. Open **Ask AEGIS** → **Site priority list** → click **Open** on another listed site to jump the map.
+1. Header: active emergency, high-risk count, decision-needed count.  
+2. **Find site** → Show = **High risk** (or click a red map dot). Open a high-risk site (e.g. Blue Heron Solar, City of Sarasota WWTP, or SUB-001 / Fort Myers Beach for ConflictFlag story).  
+3. Read **Summary**, **Why this score**, downstream / impact story.  
+4. **Reduce load** or **Shut down** with a reason + token `AEGIS-EXEC-DEMO`.  
+5. **Ask AEGIS** → **Site priority list** → **Open** another site.
 
-Optional: search `tampa`, click a match, then **Clear**.
-
-Auth token for forms: `AEGIS-EXEC-DEMO`.
+Optional: search `tampa` → click match → **Clear**.  
+Full narration: [`docs/DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md`](docs/DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md).
 
 ---
 
-## Quick API checks
+## Architecture (how the prototype is built)
 
-- http://127.0.0.1:8000/api/v1/health/  
-- Risk map / predict / impact / brief under `/api/v1/` (see handover and locked decisions docs)
+```text
+Hybrid demo data (maps + weather + sensor proxy)
+        │
+        ▼
+Heartbeat: Isolation Forest → XGBoost → Old Guard rules → save
+        │
+        ▼
+Django REST API  (/api/v1/...)
+        │
+        ▼
+Streamlit Command Center
+  map · Find site · Summary · Why this score · HITL · Ask AEGIS
+```
 
-```powershell
-.\.venv\Scripts\python.exe backend\manage.py test api
+| Layer | Tech | Role |
+|-------|------|------|
+| API / DB | Django + DRF + SQLite | Assets, telemetry, audit, seed |
+| Risk | **XGBoost** | Site risk score [0, 1] + feature drivers |
+| Sensor integrity | **Isolation Forest** | Odd readings → lower confidence |
+| Physics referee | **Old Guard** rules | ConflictFlag if physics says danger but model looks “safe” |
+| Cascades | **NetworkX** | Who fails next (hospitals, water, pumps) |
+| Language | Offline `FAKE_LLM=1` or optional NVIDIA NIM | Plain-English briefs only (not the risk engine) |
+| UI | Streamlit | Operator Command Center |
+| Control | HITL + audit log | Human must approve protect / restore |
+
+**Beyond chatbots (brief interest):** forecasting-style risk scoring, anomaly detection, graph impact, grounded GenAI phrasing. Crew optimization (Sword) and computer vision are roadmap.
+
+Deeper “why / math / code map”: [`docs/20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md`](docs/20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md).
+
+---
+
+## Sample and mocked data
+
+| Path | What it is |
+|------|------------|
+| `data/assets.csv` | ~50 demo sites (names, coords, estimated `replacement_cost`) |
+| `data/telemetry.csv` | Sensor-like channels (ETT transformer series used as **proxy**) |
+| `data/dependencies.csv` | Inferred feed edges (not true breaker topology) |
+| `data/raw/` | Public-style GIS / Ian track / weather cache inputs |
+| `artifacts/xgb_risk.joblib` | Trained risk model |
+| `artifacts/isolation_forest.joblib` | Trained anomaly model |
+
+**Honesty:** This is a Hurricane Ian–themed **hybrid** demo (public Southwest Florida–style locations + Open-Meteo / NOAA-style weather feel + ETT as SCADA proxy). It is **not** live SGW control-room data. Full tags: [`docs/15-DATA-PROVENANCE.md`](docs/15-DATA-PROVENANCE.md).
+
+Optional rebuild (not required to demo): `scripts/build_realistic_demo_data.py`, `scripts/train_xgb.py`.
+
+---
+
+## Assumptions and limitations
+
+| Topic | Working position |
+|-------|------------------|
+| Incomplete client brief | Explicit assumptions in the PRD; clarity over polish |
+| Hazards | Brief lists hurricane, flood, heatwave, wildfire. **Prototype is coastal flood/wind first.** Heat/fire reuse the same loop later |
+| “Temperature” in model | Mostly **equipment oil temp**, not a full heatwave product |
+| Dependencies | Nearest-lifeline **inferred** edges |
+| Risk labels | Physics-ish **synthetic** labels for learnable demo (see tech deep dive) |
+| ConflictFlag demo | SUB-001 may be score-clamped so assessors always see Old Guard |
+| Search UI | Streamlit may need blur / another click before Find filters apply |
+| Emergency coordination | Phase 1 = shared map, ranked sites, audit. **Not** full dispatch (Sword later) |
+| Security | Advisory + demo token. **Not** production CIP / hardened OT |
+| Autonomy | **0%** unsupervised switching by design |
+
+---
+
+## Submission package (written + code)
+
+| Deliverable | File |
+|-------------|------|
+| D1 — PRD | [`docs/DELIVERABLE-1-PRD-AEGIS.md`](docs/DELIVERABLE-1-PRD-AEGIS.md) |
+| D2 — Executive briefing | [`docs/DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md`](docs/DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md) |
+| D3 — Prototype | This repo + README |
+| D3 — Video script | [`docs/DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md`](docs/DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md) |
+| Assessor / interview handover | [`docs/18-PROTOTYPE-AND-PRD-HANDOVER.md`](docs/18-PROTOTYPE-AND-PRD-HANDOVER.md) |
+| Official brief (transcribed) | [`docs/01-technical-assessment-brief.md`](docs/01-technical-assessment-brief.md) |
+
+---
+
+## Document map (deeper reading)
+
+| If you want… | Read |
+|--------------|------|
+| How we thought (brainstorm → build) | [`docs/18-PROTOTYPE-AND-PRD-HANDOVER.md`](docs/18-PROTOTYPE-AND-PRD-HANDOVER.md) |
+| Product requirements (9 AECOM sections) | [`docs/DELIVERABLE-1-PRD-AEGIS.md`](docs/DELIVERABLE-1-PRD-AEGIS.md) |
+| Business case, KPIs, FAQ | [`docs/DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md`](docs/DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md) |
+| XGBoost / IF / Old Guard / NetworkX explained | [`docs/20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md`](docs/20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md) |
+| Data sources and proxies | [`docs/15-DATA-PROVENANCE.md`](docs/15-DATA-PROVENANCE.md) |
+| Brief vs package gaps (closed) | [`docs/19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md`](docs/19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md) |
+| Internal thinking log | [`docs/00-AEGIS-NORTH-STAR.md`](docs/00-AEGIS-NORTH-STAR.md) |
+| Domain brainstorm | [`docs/02-domain-expert-brainstorm-electrical-stp.md`](docs/02-domain-expert-brainstorm-electrical-stp.md) |
+| Architecture diagrams (research) | [`docs/10-SYSTEM-DIAGRAMS.md`](docs/10-SYSTEM-DIAGRAMS.md) |
+| Locked product decisions | [`docs/09-FINAL-LOCKED-DECISIONS.md`](docs/09-FINAL-LOCKED-DECISIONS.md) |
+
+Samples `docs/03` and `docs/04` are **tone practice only**, not the submission.
+
+Research digests `docs/05`–`08`, sprint notes `docs/12`–`17`: supporting context, not required reading to run the app.
+
+---
+
+## Repo layout
+
+```text
+README.md          ← you are here
+.env.example       ← copy to .env (FAKE_LLM=1 by default)
+requirements.txt
+data/              ← demo CSVs + raw provenance inputs
+artifacts/         ← trained XGBoost + Isolation Forest
+scripts/           ← data build, train, eval (optional)
+backend/           ← Django + DRF + ML/graph/HITL services
+frontend/          ← Streamlit Command Center (dashboard.py)
+docs/              ← PRD, exec brief, video script, handover, tech deep dive
 ```
 
 ---
 
-## Layout
+## Optional: live language briefs
 
-```
-data/        assets, sensor samples, deps + raw provenance inputs
-artifacts/   trained risk and sensor-check models
-scripts/     data build, train, backtest, eval
-backend/     Django + REST + services
-frontend/    Streamlit Command Center
-docs/        PRD, exec briefing, video script, research, provenance
-```
+Default is offline demo mode (`FAKE_LLM=1` in `.env`). For optional live briefs: set `NVIDIA_API_KEY`, `FAKE_LLM=0`, and a model ID from [build.nvidia.com](https://build.nvidia.com). Not required to assess the Shield workflow.
 
 ---
 
-## Supporting research (not submission)
+## How this solution was developed
 
-North star, whiteboard digests, sprint plans: `docs/00`-`17`. Samples `03` and `04` are tone references only.
+1. **Brainstorm** — Incomplete brief; named gaps; domain expert on floods, heat, water plants.  
+2. **Research** — Data silos; power → water cascades; protect then restore.  
+3. **Planning** — Locked one operator workflow; storm case study first.  
+4. **Implementation** — Working Command Center; hybrid data; human must approve actions.
+
+---
+
+*Not legal or operational advice. First-pass decision support for a case assessment.*

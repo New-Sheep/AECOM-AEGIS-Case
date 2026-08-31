@@ -25,6 +25,7 @@ Written deliverables use **plain case-brief voice** (short sentences, limited ja
 | D3 Video script | [`DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md`](DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md) |
 | Assessor handover | [`18-PROTOTYPE-AND-PRD-HANDOVER.md`](18-PROTOTYPE-AND-PRD-HANDOVER.md) |
 | Brief gap analysis | [`19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md`](19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md) (**gap-fill applied** into D1/D2) |
+| Tech deep dive (XGBoost / IF / Old Guard / NetworkX) | [`20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md`](20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md) |
 
 ---
 
