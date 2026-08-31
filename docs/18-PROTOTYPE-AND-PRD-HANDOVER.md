@@ -38,7 +38,7 @@ flowchart LR
 | D1 Product Requirements | [`DELIVERABLE-1-PRD-AEGIS.md`](DELIVERABLE-1-PRD-AEGIS.md) |
 | D2 Executive briefing | [`DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md`](DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md) |
 | D3 Prototype | Code + [`../README.md`](../README.md) (locked) |
-| D3 Video script | [`DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md`](DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md) (record separately) |
+| Tech appendix (accurate) | [`21-APPENDIX-TECH-DEEP-DIVE-PROTOTYPE-ACCURATE.md`](21-APPENDIX-TECH-DEEP-DIVE-PROTOTYPE-ACCURATE.md) |
 | Assignment brief | [`01-technical-assessment-brief.md`](01-technical-assessment-brief.md) |
 | Data honesty | [`15-DATA-PROVENANCE.md`](15-DATA-PROVENANCE.md) |
 | Brief vs submission gaps | [`19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md`](19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md) (gap-fill applied) |

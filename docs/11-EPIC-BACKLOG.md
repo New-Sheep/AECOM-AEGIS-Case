@@ -225,7 +225,7 @@ flowchart TB
 
 | Field | Value |
 |-------|--------|
-| **In scope** | **NVIDIA NIM** client (RedlineGuard pattern: `https://integrate.api.nvidia.com/v1`, `NVIDIA_API_KEY`, `meta/llama-3.1-8b-instruct`); prompt with risk, drivers, deps, trade-off ($ saved vs outage); cite telemetry/weather fields; ConflictFlag language; `FAKE_LLM=1` fallback |
+| **In scope** | **NVIDIA NIM** client (RedlineGuard pattern: `https://integrate.api.nvidia.com/v1`, `NVIDIA_API_KEY`, `nvidia/nemotron-3-nano-30b-a3b`); prompt with risk, drivers, deps, trade-off ($ saved vs outage); cite telemetry/weather fields; ConflictFlag language; `FAKE_LLM=1` fallback |
 | **Out of scope** | OpenAI API keys, RAG over SOP PDFs, MCP, multi-agent mesh |
 | **Stretch** | Devil’s Advocate LLM pass |
 | **Depends on** | E4, E5 |

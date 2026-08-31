@@ -22,10 +22,10 @@ Written deliverables use **plain case-brief voice** (short sentences, limited ja
 | D1 PRD | [`DELIVERABLE-1-PRD-AEGIS.md`](DELIVERABLE-1-PRD-AEGIS.md) |
 | D2 Exec briefing | [`DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md`](DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md) |
 | D3 Prototype + README | Repo root [`README.md`](../README.md) (locked) |
-| D3 Video script | [`DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md`](DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md) |
 | Assessor handover | [`18-PROTOTYPE-AND-PRD-HANDOVER.md`](18-PROTOTYPE-AND-PRD-HANDOVER.md) |
 | Brief gap analysis | [`19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md`](19-GAP-ANALYSIS-BRIEF-VS-SUBMISSION.md) (**gap-fill applied** into D1/D2) |
-| Tech deep dive (XGBoost / IF / Old Guard / NetworkX) | [`20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md`](20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md) |
+| Tech deep dive (models) | [`20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md`](20-TECH-DEEP-DIVE-MODELS-RULES-GRAPH.md) |
+| Tech appendix (prototype-accurate) | [`21-APPENDIX-TECH-DEEP-DIVE-PROTOTYPE-ACCURATE.md`](21-APPENDIX-TECH-DEEP-DIVE-PROTOTYPE-ACCURATE.md) |
 
 ---
 
@@ -503,7 +503,8 @@ Cover all nine required sections; write *your* voice from this north star (sampl
 
 - [x] Code + README + mocked data (§9) — prototype **LOCKED**  
 - [x] One end-to-end workflow: storm → risk → impact → brief → HITL decision  
-- [x] Video 5–10 min script: `DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md` (record separately)  
+- [ ] Video demo (5–10 min) — record and submit separately  
+
 
 ---
 
@@ -559,8 +560,8 @@ Cover all nine required sections; write *your* voice from this north star (sampl
 | `05`–`08` research-plan-whiteboard-part*.md` | Tutor board digests |
 | `DELIVERABLE-1-PRD-AEGIS.md` | **Submission PRD** |
 | `DELIVERABLE-2-EXECUTIVE-BRIEFING-AEGIS.md` | **Submission exec briefing** |
-| `DELIVERABLE-3-VIDEO-DEMO-SCRIPT.md` | **Video narration script** |
 | `18-PROTOTYPE-AND-PRD-HANDOVER.md` | Assessor / interview handover |
+| `21-APPENDIX-TECH-DEEP-DIVE-PROTOTYPE-ACCURATE.md` | Prototype-accurate tech appendix |
 | **`00-AEGIS-NORTH-STAR.md` (this file)** | **Governing plan** |
 
 ---

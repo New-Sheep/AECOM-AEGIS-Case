@@ -387,7 +387,7 @@ dashboard.py (Streamlit)
 |---------|--------|
 | `LLM_PROVIDER` | `nvidia` |
 | `NVIDIA_API_KEY` | from [build.nvidia.com](https://build.nvidia.com) — **never commit** |
-| `NVIDIA_MODEL` | `meta/llama-3.1-8b-instruct` (default; overridable) |
+| `NVIDIA_MODEL` | `nvidia/nemotron-3-nano-30b-a3b` (default; overridable) |
 | Base URL | `https://integrate.api.nvidia.com/v1` |
 | Protocol | **OpenAI-compatible** chat completions HTTP |
 
@@ -405,7 +405,7 @@ dashboard.py (Streamlit)
 
 ### Docs / PRD wording
 
-- Say **“NVIDIA NIM / Llama instruct via integrate.api.nvidia.com”** in architecture sections.
+- Say **“NVIDIA NIM / nvidia/nemotron-3-nano-30b-a3b via integrate.api.nvidia.com”** in architecture sections.
 - Samples that mention GPT-4o remain **tone references only**, not stack truth.
 
 ---
